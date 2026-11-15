@@ -11,6 +11,8 @@ export const MAX_FILE_BYTES = 64 * 1024 * 1024
 export const FILE_CHUNK_BYTES = 512 * 1024
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const lockContext = new AsyncLocalStorage()
+// macOS ships no flock command. There open() itself can take the same kind of lock: held until the file is closed or the process ends.
+const O_EXLOCK_DARWIN = 0x20
 export class FileError extends Error {
   constructor(message, code = 'INVALID_FILE') { super(message);this.name = 'FileError';this.code = code }
 }
@@ -70,6 +72,7 @@ export class FileBlobs {
   async exclusiveLock(run) {
     if (this.sharedLock) return this.sharedLock(run)
     await this.initialize()
+    if (process.platform === 'darwin') return this.openLock(run)
     const child = spawn('flock', ['-x', join(this.root, '.quota.lock'), '-c', 'echo locked; read'], { stdio: ['pipe', 'pipe', 'ignore'] })
     let timer, settled = false
     try {
@@ -85,6 +88,18 @@ export class FileBlobs {
       child.stdin.end()
       await new Promise(resolve => { const timer = setTimeout(() => { child.kill('SIGKILL');resolve() }, 2000);child.once('exit', () => { clearTimeout(timer);resolve() }) })
     }
+  }
+  async openLock(run) {
+    const path = join(this.root, '.quota.lock'), deadline = Date.now() + 15000
+    let handle
+    for (;;) {
+      try { handle = await open(path, constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK | O_EXLOCK_DARWIN, 0o600);break } catch (error) {
+        if (error?.code !== 'EAGAIN' && error?.code !== 'EWOULDBLOCK') throw error
+        if (Date.now() > deadline) throw new Error('文件存储锁等待超时')
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+    }
+    try { return await run() } finally { await handle.close() }
   }
   async listObjects(directory = this.root) {
     await this.initialize()

@@ -100,3 +100,17 @@ test('the same DSH tool call replays its committed file revision after later edi
   assert.equal(await definition.execute(args, exec), first)
   assert.equal(f.store.get(f.id).events.filter(e => e.type === 'file.published').length, 2)
 })
+
+test('the file store lock lets one holder in at a time, also between two stores on the same folder', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'mira-lock-'));t.after(() => rm(root, { recursive: true, force: true }))
+  const a = new FileBlobs(join(root, 'blobs')), b = new FileBlobs(join(root, 'blobs')), order = []
+  let release
+  const held = new Promise(resolve => { release = resolve })
+  const first = a.withLock(async () => { order.push('a in');await held;order.push('a out') })
+  await new Promise(resolve => setTimeout(resolve, 300))
+  const second = b.withLock(async () => { order.push('b in') })
+  await new Promise(resolve => setTimeout(resolve, 400))
+  assert.equal(order.join(), 'a in')
+  release();await first;await second
+  assert.equal(order.join(), 'a in,a out,b in')
+})
