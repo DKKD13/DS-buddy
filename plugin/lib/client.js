@@ -2131,7 +2131,9 @@ window.__ModuleLoader__.load({
 		/** Open a task the DSH way: its bound Session, with the plugin's tabs on the right. Falls back to the project. */
 		function openTask(projectId, thread) {
 			if (projectId) writePref("project", projectId);
-			const sessionId = thread && !isOutside(thread) && thread.sessionId;
+			// E2E #27: a task handed to Claude Code or Codex keeps the DSH conversation it had. Opening the task stays in that
+			// conversation (its panel shows the progress, its composer passes words on) instead of the plugin's older page.
+			const sessionId = thread && (isOutside(thread) ? thread.dshSessionId : thread.sessionId);
 			if (sessionId && shell.workspace) {
 				try {
 					shell.workspace.openSession(sessionId);

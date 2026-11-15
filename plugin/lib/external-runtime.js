@@ -10,6 +10,17 @@ import { fileURLToPath } from 'node:url'
 export const EXTERNAL_PROVIDERS = ['claude', 'codex']
 export const RUNTIME_LABELS = { dsh: 'DSH', claude: 'Claude Code', codex: 'Codex' }
 
+// A runner that is signed out, or whose sign-in expired, fails with its own English text (E2E #17: 「Your access token
+// could not be refreshed…」 in 进展). Matched on the runner's own failure text only; anything else passes through.
+const SIGNED_OUT = /refresh token|access token|sign(ed)? ?in|log(ged)? ?(in|out)|oauth|authenticat|unauthori[sz]ed|\b401\b/i
+
+/** The runner's sign-in failure, said as what happened and the way out; other errors unchanged. */
+export function signInError(runtime, error) {
+  if (!EXTERNAL_PROVIDERS.includes(runtime) || !SIGNED_OUT.test(String(error?.message ?? error))) return error
+  const label = RUNTIME_LABELS[runtime]
+  return new Error(`这台机器上的 ${label} 没登录或登录已过期。${runtime === 'codex' ? '在这台机器上运行 codex login 重新登录' : `在这台机器上重新登录 ${label} `}后再试，或者在任务里把执行方式换回 DSH。`, { cause: error })
+}
+
 const MCP_PATH = fileURLToPath(new URL('./external-mcp.js', import.meta.url))
 const MAX_ERROR = 4000
 /** Said to a runner that picks its own earlier session of this task back up, in place of the "new session" notice. */
@@ -423,9 +434,9 @@ export class ExternalRuntime {
       } catch (error) {
         // The runner could not reopen its own session (its record was cleaned up, or the work folder moved) and gave
         // up before doing anything: start a fresh one, once. A failure after it got going is a real failure.
-        if (!resume || slot.started || this.stopped) throw error
+        if (!resume || slot.started || this.stopped) throw signInError(binding.runtime, error)
         this.ctx.logger?.warn?.(`${RUNTIME_LABELS[binding.runtime]} 没能接上原来的会话，改为新开一个`, error)
-        result = await attempt(this.driver.text.continuityNotice(project, key), null)
+        result = await attempt(this.driver.text.continuityNotice(project, key), null).catch(error => { throw signInError(binding.runtime, error) })
       }
       if (addressed && !turn.replied && result.output.trim()) {
         this.actions.assistantPost(project, key, result.output)

@@ -207,7 +207,7 @@ export function createTools({ defineTool, store, driver, actions, files, devices
     parameters: {
       title: { type: 'string', required: true, description: '线程标题：动词开头、三到十个字、说清目标。' },
       assignee: { type: 'string', description: '一般不填，任务交给项目的执行者。只有用户点名接着用老任务的执行者（比如「还让工程师做」）时，才填那个名字。' },
-      brief: { type: 'string', required: true, description: '任务一句话：要交付什么。' },
+      brief: { type: 'string', required: true, description: '任务一句话：要交付什么。这句话会原样显示给项目主人，不要写「用户」；提到要他决定的事时省略主语（例：「先出两个风格方向，拍板后再定稿」）。' },
       note: { type: 'string', description: '开任务时对执行者说的一句话（任务边界、额外约束或顺序），会显示在项目对话里，不用再以 @ 谁开头；不要写成「选工程师：…」的选人批注，不要复述用户原话。' },
       priority: { type: 'string', enum: PRIORITIES, description: '默认 P2。' },
       cite_message_ids: CITES,

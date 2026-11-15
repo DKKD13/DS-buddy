@@ -167,7 +167,13 @@ function eventLine(project, thread, event) {
       return { text: `${memberName(project, event.by)}作废了拍板「${decision.question}」：${event.reason ?? ''}`, tone: 'closed' }
     }
     case 'turn.failed':
-      return event.key === workerKey(thread.id) ? { text: `唤醒失败：${event.error ?? '未知错误'}`, tone: 'error' } : undefined
+      if (event.key !== workerKey(thread.id)) return undefined
+      // E2E #17: an outside runner that is installed but not signed in fails with its own raw error; say what to do next.
+      if (thread.runner === 'claude' || thread.runner === 'codex') {
+        const name = thread.runner === 'claude' ? 'Claude Code' : 'Codex'
+        return { text: `${name} 这一轮没跑起来：${event.error ?? '未知错误'}。可以在「执行」里换回 DeepSeek Harness；如果是没登录，先在这台机器上登录 ${name} 再试。`, tone: 'error' }
+      }
+      return { text: `这一轮没跑起来：${event.error ?? '未知错误'}`, tone: 'error' }
     case 'runtime.event': {
       if (event.key !== workerKey(thread.id) || event.kind !== 'tool') return undefined
       let label = event.text

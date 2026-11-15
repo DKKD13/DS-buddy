@@ -24,7 +24,7 @@ export const INTENT_SYSTEM = `你是用户的个人助理，正在回看他最�
 
 分三类找：
 1. interests 话题：他反复提到、花时间做、主动追问的东西。区分「兴趣」和「手上的活」：被迫处理的 bug 是活，下班还在聊的设计风格是兴趣。
-2. needs 没说出口的需要：他卡住了、绕了几次、说「回头再看」、问了一半没问完的地方。写清楚卡在哪，不要猜他想要什么。
+2. needs 没说出口的需要：他卡住了、绕了几次、说「回头再看」、问了一半没问完的地方。写清楚卡在哪，不要猜他想要什么。他明确说了不动、不要、先不做的东西（例：「只改 B，其余不动」里的其余部分）不算需要，不要记。
 3. signals 情绪信号：只记看得见的事实（时间、频率、原话），例如「连着三晚 1 点后才停」「说了两次烦死了」。不要下诊断，不要写「用户很焦虑」。
 
 每一条都必须写 refs：引用的消息编号（如 "w3"）。找不到原话支撑的不要写。
@@ -47,6 +47,8 @@ export const NIGHT_SYSTEM = `现在是用户睡着的时候。你在一个只属
 第三轮 补强：给留下的补证据、把话改短。补不齐就放弃。
 没有更好的就停，不要为了凑数降低标准。某一类没有好东西就放进 empty，写一句为什么。扔掉的候选放进 dropped，各写一句原因。
 
+他明确说过不要动、先不做、只改其中一部分的事，被他排除的那部分不要提议去做。
+dropped 里的 reason 早上也会给他看：同样用「你」称呼，同样不提他几点在做事。
 refs 只能用材料里给出的编号（w、t、d、c、f、i 开头）。编号只写在 refs 里，title 和 body 里不要出现编号，写成他看得懂的名字。
 title 和 body 是早上直接给他本人看的：用「你」称呼他，不要写「他」或「用户」。
 只输出一个 JSON，不要别的文字：
@@ -68,6 +70,7 @@ export const DIARY_SYSTEM = `你是用户的个人助理。下面是你昨晚想
 - 语气平实、简短，像同事写的工作记录：不打招呼，不寒暄，不猜他的作息或心情，不用感叹号，不用「吧、呢、啦、哦、哈」这类语气词，不用比喻和撒娇的说法，不写「我一直在想你」这类没有事实支撑的话。
 - 他说过别再提的话题，一个字都不要提。
 - 不要写材料编号（例如 t1、w2、i1），写成他看得懂的名字。
+- 这是写给他本人看的：称呼他用「你」，不要写「他」或「用户」。不写他几点在做事、连着做了多久；扔掉的东西如果只和作息有关，就不要写进日记。
 
 只输出一个 JSON，不要别的文字：
 {"line":"","opening":"","night":[{"text":""}],"closing":""}`
@@ -299,7 +302,7 @@ export class Dream {
       }
       const intent = this.checkIntent(await this.complete({ system: INTENT_SYSTEM, input: material.text }), material.items)
       rejected.push(...intent.rejected); times.push(this.now())
-      intent.keep.forEach((it, i) => material.items.set(`i${i + 1}`, { kind: 'intent', label: `你白天记下的：${it.text}`, projectId: it.refs.map(r => material.items.get(r)?.projectId).find(Boolean) ?? null }))
+      intent.keep.forEach((it, i) => material.items.set(`i${i + 1}`, { kind: 'intent', label: `助理白天记下的：${it.text}`, projectId: it.refs.map(r => material.items.get(r)?.projectId).find(Boolean) ?? null }))
       const nightInput = [material.text, '', '你白天记下的他在意的事：', ...(intent.keep.length ? intent.keep.map((it, i) => `[i${i + 1}] ${{ interests: '在意', needs: '卡住', signals: '看到' }[it.key]}｜${it.text}${it.why ? `｜${it.why}` : ''}`) : ['（没有）'])].join('\n')
       if (this.now() > deadline) throw new Error('超过一晚的时间额度')
       const night = this.checkNight(await this.complete({ system: NIGHT_SYSTEM, input: nightInput }), material.items, material.muted)
