@@ -107,6 +107,10 @@ const settle = async (drivers, ms = 1500) => {
 }
 
 /** A small working day in one project: a thread opened, a decision asked and answered, a delivery. */
+// The recap tests below lay their scenario out on the real day (the store stamps events with the real clock) and then run
+// the timer for up to twenty minutes. Started in the last minutes before midnight, that runs into a day whose checks are not due yet.
+const tooLateToday = () => { const end = new Date();end.setHours(24, 0, 0, 0);return end.getTime() - Date.now() < 25 * 60_000 && 'needs 25 minutes before midnight' }
+
 function aDay(env, name = '回顾项目', cwd) {
   const { projectId } = env.actions.createProject({ name, cwd })
   const project = env.store.get(projectId)
@@ -320,7 +324,7 @@ test('two device summaries sharing an event ID stay distinct and expose per-devi
   assert.deepEqual(view.devices.map(d => [d.name, d.minutes]).sort(), [['另一台 Mac', 10], ['工作 Mac', 10]].sort())
 })
 
-test('one morning and one evening recap a day across projects; the per-project morning card is off', async () => {
+test('one morning and one evening recap a day across projects; the per-project morning card is off', { skip: tooLateToday() }, async () => {
   // 19:00 of the day the clock lands on, or a little after the real now when the suite runs later than that (events are
   // stamped with the real clock). Taken from now + 2 min, not from now: at 23:59 the two are on different days and the
   // morning check saw hour 0 (flaked once, 31 Oct 23:59 UTC).
@@ -345,7 +349,7 @@ test('one morning and one evening recap a day across projects; the per-project m
   await settle([env.driver, env.hubDriver, env2.driver, env2.hubDriver])
 })
 
-test('a daily check that cannot write (a full disk) stays inside the timer, and the next tick tries again', async () => {
+test('a daily check that cannot write (a full disk) stays inside the timer, and the next tick tries again', { skip: tooLateToday() }, async () => {
   const today = new Date(Date.now() + 120_000); today.setHours(19, 0, 0, 0)
   const env = setup(async () => {}, { now: Math.max(today.getTime(), Date.now() + 120_000) })
   aDay(env)

@@ -52,7 +52,7 @@ Tacit is a context layer for DeepSeek Harness. It reorganizes what is scattered 
 需要 DSH 0.2.x 的 Web profile 和 Node 24 以上。
 
 ```sh
-cd plugin && npm test                  # 477 个单测
+cd plugin && npm test                  # 478 个单测
 bash scripts/install-mac.sh            # Mac：把插件装进 DSH 并启动一个试用的 DSH（profile mira-qa，端口 18180）
 ```
 

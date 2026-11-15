@@ -380,3 +380,16 @@ test('executors and the memory assistant are told their sessions can be read, so
   assert.match(wakeText(project, workerKey('t_x'), [], 'message'), /都做完了就调用 no_reply 结束（它直接结束本轮），不再写文字/)
   assert.match(env.tools.find(t => t.definition.name === 'no_reply').definition.description, /包括刚用 post_message 说过了/)
 })
+
+test('every role writes to the owner in the owner\'s language, as the task chat, cards and the assistant chat are read by them', async () => {
+  const env = setup(async (agent) => { await env.call(agent, 'inbox_read'); await env.call(agent, 'no_reply', {}) })
+  const { projectId } = env.actions.createProject({ name: '语言' })
+  const project = env.store.get(projectId)
+  const { rolePrompt } = await import('../lib/protocol.js')
+  const { MIRA } = await import('../lib/store.js')
+  for (const key of [COORDINATOR, MIRA, workerKey('t_x')]) {
+    assert.match(rolePrompt(project, key), /用用户说话的语言写：他用中文，你就用中文，任务对话里的直接回答、post_message、交付说明、拍板卡的问题和选项都是/)
+  }
+  const { hubRolePrompt } = await import('../lib/hub.js')
+  assert.match(hubRolePrompt({ nonce: 'n' }), /用他说话的语言回答：他用中文就用中文/)
+})
