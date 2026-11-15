@@ -171,7 +171,9 @@ function eventLine(project, thread, event) {
       // E2E #17: an outside runner that is installed but not signed in fails with its own raw error; say what to do next.
       if (thread.runner === 'claude' || thread.runner === 'codex') {
         const name = thread.runner === 'claude' ? 'Claude Code' : 'Codex'
-        return { text: `${name} 这一轮没跑起来：${event.error ?? '未知错误'}。可以在「执行」里换回 DeepSeek Harness；如果是没登录，先在这台机器上登录 ${name} 再试。`, tone: 'error' }
+        // A sign-in failure already says the way out (external-runtime.js signInError); anything else gets one.
+        const error = String(event.error ?? '未知错误').replace(/[。.]\s*$/, '')
+        return { text: `${name} 这一轮没跑起来：${error}。${/换回/.test(error) ? '' : '可以在「执行」里换回 DeepSeek Harness。'}`, tone: 'error' }
       }
       return { text: `这一轮没跑起来：${event.error ?? '未知错误'}`, tone: 'error' }
     case 'runtime.event': {
