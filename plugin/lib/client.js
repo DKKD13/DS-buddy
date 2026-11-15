@@ -2432,6 +2432,16 @@ window.__ModuleLoader__.load({
 		}
 
 		/** The files a task published to the project's shared files. */
+		const canPreview = f => /\.(html?|md|markdown)$/i.test(f.path || "") || /^image\//.test(f.mime || "");
+		/**
+		 * The 交付 tab's order: the file to look at first on top, the rest newest first. Among what came in with the last
+		 * delivery (within a minute of the newest file), a page comes before a document, and both before their screenshots.
+		 */
+		function deliveryOrder(files) {
+			const newest = files[0] ? files[0].at || 0 : 0, batch = files.filter(f => (f.at || 0) >= newest - 60000);
+			const pick = batch.find(f => /\.html?$/i.test(f.path || "")) || batch.find(f => /\.(md|markdown)$/i.test(f.path || "")) || batch.find(canPreview) || files.find(canPreview);
+			return pick ? [pick, ...files.filter(f => f !== pick)] : files;
+		}
 		// Newest first: the tab opens on what was delivered last, not on an early draft (E2E #23).
 		const deliveredFiles = (project, thread) => (project.files || []).filter(f => f.by?.threadId === thread.id).sort((a, b) => (b.at || 0) - (a.at || 0));
 		// Decimal units, as macOS Finder counts them.
@@ -2507,7 +2517,7 @@ window.__ModuleLoader__.load({
 			const f = handoff.facts, w = f && f.workspace;
 			if (!f) return head;
 			const counted = [`${f.messages} 条新消息`, `${f.turns} 轮执行`, w && w.commits !== null ? `${w.commits} 次提交` : null, w ? `${w.dirtyCount} 个文件没提交` : null].filter(Boolean).join("，");
-			return `${head}这期间有 ${counted}，已经告诉接手的一方。`;
+			return `${head}这期间有 ${counted}。`;   // no claim that the other side was told: a run that fails to start never reads it (E2E #17)
 		}
 
 		/**
@@ -3743,7 +3753,7 @@ window.__ModuleLoader__.load({
 				landed?.status === "failed" ? h("div", { className: "mp-error" }, landed.error) : null,
 				mr?.url ? h("a", { className: "mp4-mono", href: mr.url, target: "_blank", rel: "noopener" }, mr.url) : null,
 				mr?.error ? h("div", { className: "mp-error" }, mr.error) : null,
-				files.length ? h(Section, { label: `交付文件 ${files.length}` }, files.map((file, i) => h(DeliveredFile, { key: file.id, project, file, startOpen: i === files.findIndex(f => /\.(html?|md|markdown)$/i.test(f.path) || /^image\//.test(f.mime)) }))) : null,
+				files.length ? h(Section, { label: `交付文件 ${files.length}` }, deliveryOrder(files).map((file, i) => h(DeliveredFile, { key: file.id, project, file, startOpen: i === 0 && canPreview(file) }))) : null,
 				thread.summary ? h(Section, { label: "执行者说明" }, h("p", { className: "mp4-says" }, thread.summary)) : null,
 				landed?.status === "committed" ? h(Section, { label: "合入" },
 					h("div", { className: "mp4-mono" }, `提交 ${String(landed.sha).slice(0, 7)}，${landed.fileCount} 个文件`),
@@ -5361,7 +5371,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 		exports.executionRows = executionRows;
 		exports.livePosts = livePosts;
 		exports.skillDiff = skillDiff; exports.kanbanLine = kanbanLine; exports.STATUS_LOOK = STATUS_LOOK; exports.bannerOf = bannerOf; exports.timelineRows = timelineRows; exports.deliveredFiles = deliveredFiles; exports.sizeLabel = sizeLabel;
-		exports.mentionCandidates = mentionCandidates; exports.titledOnly = titledOnly; exports.mentionClipboard = mentionClipboard; exports.mentionText = mentionText; exports.mentionNames = mentionNames; exports.mentionRule = mentionRule; exports.iconSpec = iconSpec; exports.modelName = modelName; exports.executorOf = executorOf; exports.shownName = shownName; exports.isProjectExecutor = isProjectExecutor; exports.taskStatus = taskStatus; exports.projectLook = projectLook; exports.layoutTimeline = layoutTimeline; exports.readWake = readWake; exports.wakeMessages = wakeMessages; exports.typedInSession = typedInSession; exports.workspaceScene = workspaceScene; exports.miraScene = miraScene; exports.sceneShift = sceneShift; exports.isTemplate = isTemplate; exports.lookCells = lookCells; exports.lookPortrait = lookPortrait; exports.bestTemplate = bestTemplate; exports.hotkeyFrom = hotkeyFrom; exports.hotkeyMatches = hotkeyMatches; exports.hotkeyLabel = hotkeyLabel; exports.LOOK_TEMPLATES = LOOK_TEMPLATES; exports.LINE_BODIES = LINE_BODIES; exports.LINE_ACCESSORIES = LINE_ACCESSORIES; exports.ICONS = ICONS; exports.PROJECT_TINTS = PROJECT_TINTS; exports.PROJECT_ICON_NAMES = PROJECT_ICON_NAMES; exports.PROJECT_ICON_SHAPES = PROJECT_ICON_SHAPES;
+		exports.mentionCandidates = mentionCandidates; exports.deliveryOrder = deliveryOrder; exports.titledOnly = titledOnly; exports.mentionClipboard = mentionClipboard; exports.mentionText = mentionText; exports.mentionNames = mentionNames; exports.mentionRule = mentionRule; exports.iconSpec = iconSpec; exports.modelName = modelName; exports.executorOf = executorOf; exports.shownName = shownName; exports.isProjectExecutor = isProjectExecutor; exports.taskStatus = taskStatus; exports.projectLook = projectLook; exports.layoutTimeline = layoutTimeline; exports.readWake = readWake; exports.wakeMessages = wakeMessages; exports.typedInSession = typedInSession; exports.workspaceScene = workspaceScene; exports.miraScene = miraScene; exports.sceneShift = sceneShift; exports.isTemplate = isTemplate; exports.lookCells = lookCells; exports.lookPortrait = lookPortrait; exports.bestTemplate = bestTemplate; exports.hotkeyFrom = hotkeyFrom; exports.hotkeyMatches = hotkeyMatches; exports.hotkeyLabel = hotkeyLabel; exports.LOOK_TEMPLATES = LOOK_TEMPLATES; exports.LINE_BODIES = LINE_BODIES; exports.LINE_ACCESSORIES = LINE_ACCESSORIES; exports.ICONS = ICONS; exports.PROJECT_TINTS = PROJECT_TINTS; exports.PROJECT_ICON_NAMES = PROJECT_ICON_NAMES; exports.PROJECT_ICON_SHAPES = PROJECT_ICON_SHAPES;
 		exports.createRevisionFeed = createRevisionFeed;
 		exports.pickAsk = pickAsk; exports.inboxProjects = inboxProjects; exports.inboxNotes = inboxNotes; exports.noteAsks = noteAsks;
 		return module.exports;
