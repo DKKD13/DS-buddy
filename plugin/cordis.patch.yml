@@ -1,0 +1,8 @@
+# Layer applied when a dsh profile lists this bundle (dsh plugin add).
+- insert:
+    - id: mira-projects
+      name: dsh-mira-projects
+
+# v4: a task's process unfolds in place in its conversation ("执行了 N 步"); there is no separate 轨迹 tab.
+- id: ui-trajectory
+  disabled: true

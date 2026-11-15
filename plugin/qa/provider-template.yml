@@ -1,0 +1,27 @@
+# Append to $DSH_HOME/profiles/<profile>/cordis.patch.yml to run the project
+# assistants on an OpenAI-compatible gateway (any gateway that lists the model you want). Replace MODEL_ID with the exact id the gateway lists, and
+# export LLM_API_KEY before starting dsh. Remove `thinkingFormat` if the
+# gateway rejects the `thinking` field.
+- id: llm-pi-ai
+  config:
+    providers:
+      gateway:
+        apiKeyEnv: LLM_API_KEY
+        api: openai-completions
+        baseURL: https://llm.example.com/v1
+        compat:
+          supportsDeveloperRole: false
+          maxTokensField: max_tokens
+        models:
+          - id: MODEL_ID
+            contextWindow: 128000
+            maxTokens: 16384
+            compat:
+              thinkingFormat: deepseek
+            reasoningEfforts:
+              off:
+              high: high
+- id: agent-default-model
+  config:
+    provider: gateway
+    model: MODEL_ID

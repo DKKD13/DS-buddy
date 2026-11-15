@@ -1,0 +1,56 @@
+{
+  "name": "dsh-mira-projects",
+  "version": "0.1.0",
+  "description": "Tacit: a context layer for DeepSeek Harness. Projects, tasks, one decisions board and a personal assistant, so every agent gets exactly the context it needs.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./runtime": "./lib/runtime/postgres.js",
+    "./control": "./lib/runtime/control.js",
+    "./package.json": "./package.json",
+    "./files": "./lib/files.js",
+    "./storage": "./lib/storage.js",
+    "./repositories": "./lib/repositories.js",
+    "./migrations": "./lib/runtime/migrations.js",
+    "./devices": "./lib/devices.js",
+    "./observation-client": "./lib/observation-client.js"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "runtime-node.Dockerfile",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0 <0.3.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node --experimental-sqlite --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/dsh-agent": ">=0.2.1-rc.5 <0.3.0",
+    "@deepseek-ai/dsh-llm": ">=0.2.1-rc.5 <0.3.0",
+    "@deepseek-ai/dsh-tools": ">=0.2.1-rc.5 <0.3.0"
+  },
+  "license": "MIT"
+}

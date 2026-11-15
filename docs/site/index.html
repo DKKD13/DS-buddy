@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Tacit 是 DeepSeek Harness 里的一层上下文：交代一句，它拆成任务、交给执行者、做完回到你面前。">
+<meta property="og:title" content="Tacit">
+<meta property="og:description" content="交代一句，心领神会。A context layer for DeepSeek Harness.">
+<meta property="og:image" content="assets/poster.webp">
+<title>Tacit</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700;900&family=Pixelify+Sans:wght@500;700&display=swap"><style>
+/* Layout: a quiet board. One sentence goes in at the top; what comes back is sorted the way the product sorts it —
+   waiting on you (yellow), running (blue), done (green). Those three status colours are the only colour on the page. */
+:root {
+  --ground: #F5F6F7; --surface: #FFFFFF; --sunk: #ECEEF0;
+  --ink: #0F1115; --ink-2: #4A4F57; --ink-3: #838A94; --line: #DFE2E6;
+  --wait: #EAB308; --wait-ink: #7A5A00; --run: #0090FF; --done: #30A46C;
+  --shadow: 0 1px 2px rgba(15,17,21,.05), 0 12px 40px rgba(15,17,21,.08);
+  --f-display: "Pixelify Sans", "Noto Sans SC", ui-monospace, monospace;
+  --f-body: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #0D0E10; --surface: #17191C; --sunk: #1E2125;
+  --ink: #ECEDEE; --ink-2: #B4B8BF; --ink-3: #7C828B; --line: #2A2D32;
+  --wait: #EAB308; --wait-ink: #F2C744; --run: #3BA5FF; --done: #46B985;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 40px rgba(0,0,0,.45); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #0D0E10; --surface: #17191C; --sunk: #1E2125;
+  --ink: #ECEDEE; --ink-2: #B4B8BF; --ink-3: #7C828B; --line: #2A2D32;
+  --wait: #EAB308; --wait-ink: #F2C744; --run: #3BA5FF; --done: #46B985;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 40px rgba(0,0,0,.45); color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--ground); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased }
+a { color: inherit }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -.01em }
+p { margin: 0 }
+:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; border-radius: 4px }
+
+/* nav */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--ground) 88%, transparent); backdrop-filter: blur(10px); border-bottom: .5px solid var(--line) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ground) }
+.nav .wrap { display: flex; align-items: center; gap: 24px; min-height: 56px }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: .02em }
+.tile { display: block; flex: none }
+.nav-links { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 14px; color: var(--ink-2) }
+.nav-links a { text-decoration: none }
+.nav-links a:hover { color: var(--ink) }
+.lang { all: unset; cursor: pointer; font-family: var(--f-mono); font-size: 12px; padding: 4px 8px; border-radius: 6px; box-shadow: inset 0 0 0 .5px var(--line); color: var(--ink-2) }
+.lang:hover { color: var(--ink) }
+@media (max-width: 720px) { .nav-links a.opt { display: none } }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; font-size: 15px; font-weight: 500; text-decoration: none; transition: transform .25s ease-out, background .25s ease-out }
+.btn-main { background: var(--ink); color: var(--ground) }
+.btn-main:hover { transform: translateY(-1px) }
+.btn-quiet { box-shadow: inset 0 0 0 .5px var(--ink-3); color: var(--ink) }
+.btn-quiet:hover { background: var(--sunk) }
+
+/* hero */
+.hero { padding-block: 72px 40px }
+.hero h1 { font-size: clamp(44px, 8.4vw, 96px); line-height: 1.06; font-weight: 900; letter-spacing: -.03em }
+.hero h1 .dot { color: var(--wait) }
+.lede { margin-top: 24px; max-width: 36em; font-size: clamp(16px, 1.6vw, 19px); color: var(--ink-2) }
+.cta { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px }
+.say { margin-top: 56px; display: flex; align-items: center; gap: 12px; max-width: 760px; padding: 14px 14px 14px 18px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 .5px var(--line), var(--shadow) }
+.say-text { flex: 1; min-width: 0; font-size: clamp(15px, 1.7vw, 18px); line-height: 1.5 }
+.say-send { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--run); color: #fff }
+.caret { display: inline-block; width: 2px; height: 1.1em; margin-left: 2px; vertical-align: -.18em; background: var(--run); animation: blink 1.1s steps(2, start) infinite }
+@keyframes blink { to { visibility: hidden } }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none } .btn { transition: none } }
+.down { margin: 18px 0 18px 30px; height: 36px; width: 0; border-left: 2px dotted var(--ink-3) }
+.shot { margin: 0; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 0 0 .5px var(--line), var(--shadow) }
+.shot img { display: block; width: 100%; height: auto }
+.shot.wide { overflow-x: auto }
+.shot.wide img { min-width: 760px }
+.note { margin-top: 10px; font-family: var(--f-mono); font-size: 12px; color: var(--ink-3) }
+
+/* thesis */
+.thesis { padding-block: 72px }
+.thesis blockquote { margin: 0; max-width: 24em; font-size: clamp(28px, 4.2vw, 48px); line-height: 1.25; font-weight: 700; letter-spacing: -.02em }
+.thesis p { margin-top: 20px; max-width: 38em; color: var(--ink-2) }
+
+/* section heads */
+.sec { padding-block: 56px }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display); font-size: 15px; letter-spacing: .04em; color: var(--ink-2) }
+.ring { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor }
+.ring.wait { color: var(--wait) } .ring.run { color: var(--run) } .ring.done { color: var(--done); background: var(--done) }
+.sec h2 { margin-top: 10px; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.2; font-weight: 700 }
+
+/* feature rows */
+.rows { margin-top: 40px; display: flex; flex-direction: column; gap: 72px }
+.row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 48px; align-items: center }
+.row:nth-child(even) .row-text { order: 2 }
+.row-text { min-width: 0 }
+.row h3 { font-size: clamp(22px, 2.6vw, 30px); line-height: 1.25; font-weight: 700 }
+.row .one { margin-top: 12px; color: var(--ink-2) }
+.row ul { margin: 18px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: var(--ink-2) }
+.row li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; align-items: baseline }
+.row li::before { content: ""; width: 6px; height: 6px; margin-top: .55em; background: var(--ink); align-self: start }
+.row li b { color: var(--ink); font-weight: 500 }
+.row .shot.tall { max-width: 420px; justify-self: center }
+@media (max-width: 820px) { .row { grid-template-columns: minmax(0, 1fr); gap: 24px } .row:nth-child(even) .row-text { order: 0 } .rows { gap: 56px } }
+
+/* three more */
+.more { margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px }
+.more article { padding: 22px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 .5px var(--line) }
+.more h3 { font-size: 18px; line-height: 1.4; font-weight: 700 }
+.more p { margin-top: 8px; font-size: 15px; color: var(--ink-2) }
+
+/* how it works */
+.flow { margin-top: 32px; overflow-x: auto; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 .5px var(--line) }
+.flow svg { display: block; min-width: 760px; width: 100%; height: auto; color: var(--ink) }
+.rules { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px }
+.rules h3 { font-size: 16px; font-weight: 700 }
+.rules p { margin-top: 6px; font-size: 15px; color: var(--ink-2) }
+
+/* evidence */
+.nums { margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px }
+.num { padding: 20px 22px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 .5px var(--line) }
+.num b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 44px; line-height: 1.1; font-variant-numeric: tabular-nums }
+.num span { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-2) }
+.tablewrap { margin-top: 32px; overflow-x: auto; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 .5px var(--line) }
+table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 15px }
+th, td { padding: 12px 18px; text-align: left; vertical-align: top; border-bottom: .5px solid var(--line) }
+tr:last-child td { border-bottom: 0 }
+th { font-size: 12px; font-weight: 500; color: var(--ink-3); font-family: var(--f-mono); letter-spacing: .04em }
+td:first-child { color: var(--ink) } td { color: var(--ink-2) }
+
+/* film */
+.film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000 }
+
+/* start */
+pre { margin: 24px 0 0; padding: 18px 20px; border-radius: 14px; background: var(--ink); color: var(--ground); font-family: var(--f-mono); font-size: 14px; line-height: 1.8; overflow-x: auto }
+pre .c { opacity: .55 }
+.steps { margin: 24px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; counter-reset: s }
+.steps li { counter-increment: s; font-size: 15px; color: var(--ink-2) }
+.steps li::before { content: counter(s); display: block; font-family: var(--f-display); font-size: 28px; line-height: 1.2; color: var(--ink) }
+.steps b { color: var(--ink); font-weight: 500 }
+
+/* faq */
+.faq { margin-top: 24px; border-top: .5px solid var(--line) }
+details { border-bottom: .5px solid var(--line) }
+summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; padding: 18px 0; font-size: 17px; font-weight: 500 }
+summary::-webkit-details-marker { display: none }
+summary::after { content: "+"; margin-left: auto; font-family: var(--f-mono); color: var(--ink-3) }
+details[open] summary::after { content: "−" }
+details p { padding: 0 0 20px; max-width: 46em; color: var(--ink-2) }
+
+/* closing */
+.end { padding-block: 88px 72px; text-align: left }
+.end h2 { font-size: clamp(36px, 6vw, 72px); line-height: 1.1; font-weight: 900; letter-spacing: -.03em }
+.end .cta { margin-top: 28px }
+footer { border-top: .5px solid var(--line); padding-block: 28px 40px; font-size: 13px; color: var(--ink-3) }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center }
+footer a { text-decoration: none } footer a:hover { color: var(--ink) }
+footer .sp { margin-left: auto }
+code { font-family: var(--f-mono); font-size: .92em }
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="#top" aria-label="Tacit">
+    <svg class="tile" width="26" height="26" viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true"><path fill="#EAB308" d="M1 0h5v1h1v5h-1v1h-5v-1h-1v-5h1z"/><rect x="3" y="3" width="1" height="1" fill="#fff"/></svg>
+    Tacit
+  </a>
+  <nav class="nav-links" aria-label="页面导航">
+    <a class="opt" href="#features" data-en="Features">功能</a>
+    <a class="opt" href="#how" data-en="How it works">怎么工作</a>
+    <a class="opt" href="#evidence" data-en="Evidence">依据</a>
+    <a class="opt" href="#faq" data-en="FAQ">常见问题</a>
+    <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>
+    <button class="lang" id="lang" type="button" aria-label="Switch language">EN</button>
+  </nav>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap">
+  <h1><span data-en="Say one sentence.">交代一句，</span><br><span data-en="Tacit gets it">心领神会</span><span class="dot" data-en=".">。</span></h1>
+  <p class="lede" data-en="Tacit is a context layer inside DeepSeek Harness. It sorts what is scattered across your chats, projects, Feishu and computer by project and task, so every agent gets exactly the context it needs. You state the goal. You are called only when something needs your decision.">Tacit 是 DeepSeek Harness 里的一层上下文。它把散在对话、项目、飞书和电脑里的东西按项目和任务理好，让每个 agent 拿到正好够用的那一份。你只说目标，只在需要你拍板的时候被叫到。</p>
+  <div class="cta">
+    <a class="btn btn-main" href="https://github.com/DKKD13/tacit-dsh" data-en="Install from GitHub">在 GitHub 上安装</a>
+    <a class="btn btn-quiet" href="#film" data-en="Watch the 63-second film">看 63 秒演示</a>
+  </div>
+
+  <div class="say" role="img" aria-label="输入框里的一句话">
+    <span class="say-text"><span data-en="Tacit 1.0 launches next Thursday. Make the invitation page and the press Q&amp;A.">下周四发布 Tacit 1.0，做一份网页邀请函和媒体问答。</span><span class="caret" aria-hidden="true"></span></span>
+    <span class="say-send" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+  </div>
+  <div class="down" aria-hidden="true"></div>
+  <figure class="shot wide"><img src="assets/board.webp" width="2000" height="799" alt="待你决定看板：等你、进行中、今天完成三栏，每件事一张卡片"></figure>
+  <p class="note" data-en="Real interface, demo data.">真实界面，演示数据。</p>
+</div></section>
+
+<section class="thesis"><div class="wrap">
+  <blockquote data-en="A year of multi-agent hype.&lt;br&gt;We decided to hide the agents.">多 agent 卷了一年，<br>我们决定把 agent 藏起来。</blockquote>
+  <p data-en="You do not want to manage a room of agents. You want results, and a short list of things that need you. Splitting work across agents only matters because it gives each step a clean context, so Tacit keeps that part out of sight and puts the list in front of you.">你要管的不是一屋子 agent，而是结果，和几件等你决定的事。把活拆给多个 agent，意义只在于让每一步拿到干净的上下文。所以 Tacit 把这一层收到后面，把那份清单放到你面前。</p>
+</div></section>
+
+<section class="sec" id="features"><div class="wrap">
+  <span class="eyebrow"><i class="ring wait"></i><span data-en="What is different">有什么不一样</span></span>
+  <h2 data-en="From one sentence to finished work, and you can see every step">从交代到交付，每一步都看得见</h2>
+
+  <div class="rows">
+    <div class="row">
+      <div class="row-text">
+        <h3 data-en="One sentence is enough.">说一句就够。</h3>
+        <p class="one" data-en="The project assistant starts what it can and asks about what you left unclear.">项目助理先开工能开的，再问你没说清的。</p>
+        <ul>
+          <li><span><b data-en="Asks before it guesses">先问清再动手</b><span data-en=": warm or cool palette? Is “next Thursday” the 19th or the 26th?">：主色用暖色还是冷色？「下周四」是 19 号还是 26 号？</span></span></li>
+          <li><span><b data-en="Runs what it can in parallel">能并行的就并行</b><span data-en=": the Q&amp;A does not depend on the palette, so it starts right away.">：媒体问答不受配色影响，先做着。</span></span></li>
+        </ul>
+      </div>
+      <figure class="shot tall"><img src="assets/clarify.webp" width="1040" height="1500" loading="lazy" alt="项目对话：项目助理先开出一个任务，再问主色和日期"></figure>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <h3 data-en="It comes to you only when it needs you.">只在需要你的时候找你。</h3>
+        <p class="one" data-en="One board across every project: waiting on you, running, done today.">「待你决定」是一块跨项目的看板：等你、进行中、今天完成。</p>
+        <ul>
+          <li><span><b data-en="Everything that waits on you, in one lane">等你的事都在一栏里</b><span data-en=": deliveries to accept, questions to answer, Feishu messages you have not replied to, the assistant’s reminders.">：待验收的交付、要你拍板的问题、飞书里没回的消息、助理的提醒。</span></span></li>
+          <li><span><b data-en="No buttons on the cards">卡片上没有按钮</b><span data-en=": click a task to open it; click a message and a reply is drafted in the input box for you to edit.">：点任务卡打开任务；点消息卡，一句回复写进输入框，你改完再发。</span></span></li>
+        </ul>
+      </div>
+      <figure class="shot"><img src="assets/app.webp" width="2000" height="1250" loading="lazy" alt="个人助理对话和右侧的待你决定看板"></figure>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <h3 data-en="You can see how it is going.">做到哪一步，看得见。</h3>
+        <p class="one" data-en="Every task has one page: why it exists, what counts as done, what was read, what happened.">每个任务一页：为什么做、怎么算完成、读过什么、进展到哪。</p>
+        <ul>
+          <li><span><b data-en="Your own words stay attached">你的原话一直带着</b><span data-en=": the brief quotes what you said, with the time you said it.">：背景里引用你当时说的那句话和时间。</span></span></li>
+          <li><span><b data-en="A checklist the executor ticks">执行者自己勾的清单</b><span data-en=": “what counts as done” is written before work starts.">：「怎么算完成」在开工前写好，做到一条勾一条。</span></span></li>
+        </ul>
+      </div>
+      <figure class="shot tall"><img src="assets/task-board.webp" width="740" height="900" loading="lazy" alt="任务详情：背景、怎么算完成、读过的文件、进展"></figure>
+    </div>
+
+    <div class="row">
+      <div class="row-text">
+        <h3 data-en="What comes back is finished work.">交付的是成品。</h3>
+        <p class="one" data-en="Web pages render in the panel, images show, documents preview. Then you accept, or ask for a change.">网页直接在面板里渲染，图片直接显示，文档直接预览。看过，验收通过，或者请它改。</p>
+        <ul>
+          <li><span><b data-en="Accepting is yours">验收始终由你来</b><span data-en=": Tacit never accepts on your behalf.">：Tacit 不替你点「验收通过」。</span></span></li>
+          <li><span><b data-en="A change request starts from the file">请求修改从文件开始</b><span data-en=": the input box is prefilled with the file you are looking at.">：输入框里先填好你正在看的那个文件。</span></span></li>
+        </ul>
+      </div>
+      <figure class="shot tall"><img src="assets/delivery.webp" width="740" height="900" loading="lazy" alt="交付面板里直接打开的网页邀请函"></figure>
+    </div>
+  </div>
+
+  <div class="more">
+    <article>
+      <h3 data-en="Swap the executor any time">执行者随时可换</h3>
+      <p data-en="Each task runs on DeepSeek Harness by default. If Claude Code or Codex is on your machine, hand the task to it, take it over yourself, then hand it back. What you type follows the task.">每个任务默认由 DeepSeek Harness 执行。机器上有 Claude Code 或 Codex，就把任务交给它；也可以自己接手，做完再交还。你输入的话跟着任务走。</p>
+    </article>
+    <article>
+      <h3 data-en="Memory with a source">记忆有出处</h3>
+      <p data-en="“About you” keeps only what you said yourself, each line with the original quote, and you can undo any of it. Work memory carries its evidence.">「关于你」只记你亲口说过的话，每条带原话，随时能撤销。工作记忆每条带依据。</p>
+    </article>
+    <article>
+      <h3 data-en="It thinks once at night">夜里想一轮</h3>
+      <p data-en="When your computer is idle at night, the assistant reviews the day. In the morning a few items wait in your lane, each with its source, plus a one-page diary.">夜里电脑闲着的时候，助理把这一天过一遍。早上有几件事放进「等你」，每件写明出处，另有一页日记。</p>
+    </article>
+  </div>
+</div></section>
+
+<section class="sec" id="how"><div class="wrap">
+  <span class="eyebrow"><i class="ring run"></i><span data-en="How it works">怎么工作</span></span>
+  <h2 data-en="The unit is the task, not the agent">单位是任务，不是 agent</h2>
+  <div class="flow">
+    <svg viewBox="0 0 960 300" role="img" aria-label="你说一句话，项目助理拆成任务交给执行者，交付回到待你决定；个人助理只读飞书和电脑，把等你的事放进同一块看板" font-family="Noto Sans SC, PingFang SC, sans-serif" font-size="13">
+      <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0l8 4-8 4z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1" opacity=".9">
+        <rect x="24" y="52" width="120" height="56" rx="10"/>
+        <rect x="204" y="52" width="150" height="56" rx="10"/>
+        <rect x="424" y="24" width="210" height="112" rx="10"/>
+        <rect x="704" y="52" width="232" height="56" rx="10" stroke="#EAB308" stroke-width="2"/>
+        <rect x="204" y="208" width="150" height="56" rx="10"/>
+        <rect x="24" y="208" width="120" height="56" rx="10" stroke-dasharray="4 4"/>
+        <path d="M144 80h56" marker-end="url(#ah)"/><path d="M354 80h66" marker-end="url(#ah)"/><path d="M634 80h66" marker-end="url(#ah)"/>
+        <path d="M144 236h56" marker-end="url(#ah)"/><path d="M354 236h466v-124" marker-end="url(#ah)"/>
+        <path d="M820 52V14H84v34" stroke-dasharray="2 4" marker-end="url(#ah)"/>
+      </g>
+      <g fill="currentColor">
+        <text x="84" y="76" text-anchor="middle" font-weight="700" data-en="You">你</text><text x="84" y="96" text-anchor="middle" opacity=".7" font-size="12" data-en="one sentence">一句话</text>
+        <text x="279" y="76" text-anchor="middle" font-weight="700" data-en="Project assistant">项目助理</text><text x="279" y="96" text-anchor="middle" opacity=".7" font-size="12" data-en="asks, then splits">先问清，再拆任务</text>
+        <text x="529" y="50" text-anchor="middle" font-weight="700" data-en="Tasks, each with its own context">任务，各带各的上下文</text>
+        <text x="529" y="76" text-anchor="middle" opacity=".7" font-size="12" data-en="executor: DeepSeek Harness">执行者：DeepSeek Harness</text>
+        <text x="529" y="96" text-anchor="middle" opacity=".7" font-size="12" data-en="or Claude Code, or Codex">或 Claude Code，或 Codex</text>
+        <text x="529" y="120" text-anchor="middle" opacity=".7" font-size="12" data-en="or you, for a while">或你自己接手一会儿</text>
+        <text x="820" y="76" text-anchor="middle" font-weight="700" data-en="Waiting on you">待你决定</text><text x="820" y="96" text-anchor="middle" opacity=".7" font-size="12" data-en="accept, decide, reply">验收、拍板、回复</text>
+        <text x="279" y="232" text-anchor="middle" font-weight="700" data-en="Personal assistant">个人助理</text><text x="279" y="252" text-anchor="middle" opacity=".7" font-size="12" data-en="watches every project">看着所有项目</text>
+        <text x="84" y="232" text-anchor="middle" font-weight="700" data-en="Feishu, your Mac">飞书、电脑</text><text x="84" y="252" text-anchor="middle" opacity=".7" font-size="12" data-en="read-only">只读</text>
+        <text x="172" y="72" text-anchor="middle" opacity=".7" font-size="11" data-en="say">交代</text><text x="387" y="72" text-anchor="middle" opacity=".7" font-size="11" data-en="open">开任务</text><text x="667" y="72" text-anchor="middle" opacity=".7" font-size="11" data-en="deliver">交付</text>
+        <text x="590" y="228" text-anchor="middle" opacity=".7" font-size="11" data-en="reminders, replies to make">提醒、该回的消息</text>
+        <text x="452" y="10" text-anchor="middle" opacity=".7" font-size="11" data-en="your call goes back as one more sentence">你的决定，再变成一句话</text>
+      </g>
+    </svg>
+  </div>
+  <div class="rules">
+    <div><h3 data-en="One log is the truth">一条日志就是事实</h3><p data-en="Every state is an event in one log. The board, the task page and memory are all computed from it, so they never disagree.">所有状态都是同一条事件日志里的记录。看板、任务详情、记忆都从它算出来，不会互相打架。</p></div>
+    <div><h3 data-en="A wake carries a count, not the content">唤醒只带数，不带正文</h3><p data-en="An agent is woken with “3 unread from the project chat” and reads its own inbox. It confirms only when the turn ends, so a lost wake never loses a message.">agent 被叫醒时只知道「项目对话有 3 条未读」，正文自己去收件箱读，回合结束才确认。唤醒丢了，消息不会丢。</p></div>
+    <div><h3 data-en="Code checks, the model understands">代码只校验，理解交给模型</h3><p data-en="Code checks what is mechanical: does the quoted line exist in that message, does the number come from the material. Meaning and wording stay with the model.">代码只查机械的事：引用的原话是否真在那条消息里，数字是否来自材料。理解和措辞交给模型。</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="evidence"><div class="wrap">
+  <span class="eyebrow"><i class="ring done"></i><span data-en="Evidence">有据可循</span></span>
+  <h2 data-en="What we measured, and whom we learned from">量过什么，学自谁</h2>
+  <div class="nums">
+    <div class="num"><b>478</b><span data-en="automated tests, all passing (2026-11-16)">项自动化测试，全部通过（2026-11-16）</span></div>
+    <div class="num"><b>23</b><span data-en="end-to-end findings logged, each with a verdict in the test report">条端到端走查记录，逐条有结论，见测试报告</span></div>
+    <div class="num"><b>14s</b><span data-en="from one sentence to two open tasks (one run, isolated instance)">一句话拆成两个任务（单次实测，隔离实例）</span></div>
+    <div class="num"><b>1:48</b><span data-en="from “please change this” to version 2 (same run)">「请求修改」到第 2 版交付（同一次实测）</span></div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th data-en="WHAT WE DO">做法</th><th data-en="LEARNED FROM">学自</th></tr></thead>
+    <tbody>
+      <tr><td data-en="An inbox per agent; a wake carries only the unread count; confirm when the turn ends">每个 agent 一个收件箱，唤醒只带未读数，回合结束才确认</td><td>Raft</td></tr>
+      <tr><td data-en="Task fields and delegation">任务字段和委派方式</td><td>Multica</td></tr>
+      <tr><td data-en="Project shell and project instructions">项目外壳和项目说明</td><td>Claude Projects</td></tr>
+      <tr><td data-en="Type sizes, line heights, cards and settings pages, from measured values">字号、行高、卡片、设置页，按实测数值</td><td data-en="Codex and Claude desktop apps">Codex、Claude 桌面端</td></tr>
+      <tr><td data-en="Status icons: a ring that fills as work moves on">状态图标：随进度填充的圆环</td><td>Linear</td></tr>
+      <tr><td data-en="A board read like an inbox">像收件箱一样读的看板</td><td data-en="Gmail, Linear, Multica inbox">Gmail、Linear、Multica 收件箱</td></tr>
+      <tr><td data-en="The day as a timeline">按时间排的一天</td><td>ChatGPT Computer History</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section class="sec film" id="film"><div class="wrap">
+  <span class="eyebrow"><i class="ring run"></i><span data-en="Watch">看它跑一遍</span></span>
+  <h2 data-en="63 seconds. Real interface, demo data, tasks run by the model.">63 秒。真实界面，演示数据，任务是模型当场做的。</h2>
+  <figure class="shot" style="margin-top:32px"><video controls preload="none" playsinline poster="assets/film-poster.webp" src="https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4"></video></figure>
+</div></section>
+
+<section class="sec" id="start"><div class="wrap">
+  <span class="eyebrow"><i class="ring wait"></i><span data-en="Get started">上手</span></span>
+  <h2 data-en="Three commands, then one sentence">三条命令，然后说一句话</h2>
+  <pre><span class="c"># 需要 DeepSeek Harness 0.2.x 和 Node 24 以上</span>
+git clone https://github.com/DKKD13/tacit-dsh
+dsh plugin --profile web add "$(pwd)/tacit-dsh/plugin"
+dsh --profile web</pre>
+  <ol class="steps">
+    <li><b data-en="Meet your assistant.">认识你的助理。</b> <span data-en="The first visit opens the personal assistant. Pick its traits and a name, or skip.">第一次打开直接进个人助理。给它选个性格、起个名字，也可以跳过。</span></li>
+    <li><b data-en="Create a project and say one sentence.">建一个项目，说一句话。</b> <span data-en="The project assistant asks what it must know, then opens tasks.">项目助理问清它必须知道的，然后开任务。</span></li>
+    <li><b data-en="Come back to the board.">回到看板。</b> <span data-en="Accept what is done, answer what is asked. That is all you manage.">验收做完的，回答问你的。你要管的只有这些。</span></li>
+  </ol>
+</div></section>
+
+<section class="sec" id="faq"><div class="wrap">
+  <span class="eyebrow"><i class="ring done"></i><span data-en="FAQ">常见问题</span></span>
+  <h2 data-en="Before you install">装之前想知道的</h2>
+  <div class="faq">
+    <details open><summary data-en="What is Tacit?">Tacit 是什么？</summary><p data-en="A plugin for DeepSeek Harness. It adds projects, tasks, one decisions board and a personal assistant, so that work you hand over is split, tracked and brought back to you finished.">DeepSeek Harness 的一个插件。它加上项目、任务、一块「待你决定」看板和一个个人助理，让你交代出去的事被拆开、被跟住、做完再回到你面前。</p></details>
+    <details><summary data-en="What do I need?">需要什么才能用？</summary><p data-en="DeepSeek Harness 0.2.x with the web profile, and Node 24 or later. Models follow your DeepSeek Harness settings. Claude Code and Codex are optional.">DeepSeek Harness 0.2.x 的 Web profile，Node 24 以上。模型跟着你 DeepSeek Harness 的配置走。Claude Code 和 Codex 是可选的。</p></details>
+    <details><summary data-en="Where does my data live?">我的数据在哪？</summary><p data-en="On the machine that runs it, as one event log. Feishu and your Mac folders are read-only, limited to what you allow, and can be switched off at any time. Model keys stay on that machine and never enter the repository.">在运行它的那台机器上，是一条事件日志。飞书和 Mac 文件夹都是只读，只读你允许的，随时能关。模型的 key 只放在那台机器上，不进仓库。</p></details>
+    <details><summary data-en="How is it different from Raft or other multi-agent workspaces?">和 Raft 这类多 agent 协作工具有什么不同？</summary><p data-en="Those put agents in a room with you; the unit is the agent and the channel. Tacit’s unit is the task. Agents stay behind it, and you see one board of things that need you. We learned our message delivery from Raft and say so above.">它们把 agent 请进房间，和你一起聊，单位是 agent 和频道。Tacit 的单位是任务，agent 收在任务后面，你看到的是一块等你决定的看板。消息投递的做法我们学自 Raft，上面写了。</p></details>
+    <details><summary data-en="How is it different from Manus or Genspark?">和 Manus、Genspark 这类通用 agent 有什么不同？</summary><p data-en="They are hosted general agents that do the work for you in the cloud. Tacit is a way of organising context on your own DeepSeek Harness. The executor can be swapped, and the files stay in your folders.">它们是云端的通用 agent，替你把活干了。Tacit 是你自己 DeepSeek Harness 上的一种上下文组织方式：执行者可以换，文件留在你的文件夹里。</p></details>
+    <details><summary data-en="What does not work yet?">现在还有哪些不行？</summary><p data-en="It runs only inside DeepSeek Harness. Feishu is read-only. Codex needs its own login on your machine.">只能跑在 DeepSeek Harness 里。飞书只读。Codex 需要你机器上自己登录。</p></details>
+    <details><summary data-en="Is it free?">收费吗？</summary><p data-en="Tacit is open source under the MIT license. You pay only for the models you choose to run.">Tacit 以 MIT 许可证开源。花钱的只有你自己选的模型。</p></details>
+  </div>
+</div></section>
+
+<section class="end"><div class="wrap">
+  <h2><span data-en="Say one sentence">交代一句</span><span style="color:var(--wait)" data-en=".">。</span></h2>
+  <div class="cta">
+    <a class="btn btn-main" href="https://github.com/DKKD13/tacit-dsh" data-en="Install from GitHub">在 GitHub 上安装</a>
+    <a class="btn btn-quiet" href="#start" data-en="Read the three steps">看上手三步</a>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>Tacit</span>
+  <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>
+  <a href="https://github.com/DKKD13/tacit-dsh/blob/main/LICENSE" data-en="MIT license">MIT 许可证</a>
+  <span class="sp" data-en="Real interface, demo data. Numbers are from our own runs on 2026-11-16.">真实界面，演示数据。数字来自 2026-11-16 我们自己的实测。</span>
+</div></footer>
+
+<script>
+(function () {
+  var btn = document.getElementById('lang'), en = false;
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-en]'));
+  nodes.forEach(function (n) { n.setAttribute('data-zh', n.innerHTML); });
+  function apply() {
+    nodes.forEach(function (n) { n.innerHTML = en ? n.getAttribute('data-en') : n.getAttribute('data-zh'); });
+    document.documentElement.lang = en ? 'en' : 'zh-CN';
+    btn.textContent = en ? '中文' : 'EN';
+    try { localStorage.setItem('tacit-lang', en ? 'en' : 'zh'); } catch (e) {}
+  }
+  try { en = localStorage.getItem('tacit-lang') === 'en'; } catch (e) {}
+  if (en) apply();
+  btn.addEventListener('click', function () { en = !en; apply(); });
+})();
+</script>
+</body>
+</html>
