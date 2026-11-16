@@ -68,6 +68,7 @@ svg text{font-family:var(--sans);letter-spacing:0}
   .side nav{display:flex;flex-direction:column;gap:8px;margin-top:26px;font-size:15px}
   .side nav a{text-decoration:none;color:var(--muted)}
   .side nav a.on,.side nav a:hover{color:var(--fg)}
+  .page.notoc{grid-template-columns:190px 680px}
   .bar .brand.sm{display:none}
   .toc{display:block;position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:92px 0 40px;font-size:13.5px;line-height:1.45}
   .toc a{display:block;text-decoration:none;color:var(--muted);padding:4px 0}

@@ -110,7 +110,7 @@ def inline(s):
     s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
     s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
     return re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", r'<a href="\2">\1</a>', s)
-def convert(md, lang):
+def convert(md, lang, rel=""):
     blocks = [b.strip("\n") for b in re.split(r"\n\s*\n", md.strip())]
     out, toc, title, dek, n2, n3 = [], [], "", "", 0, 0
     for b in blocks:
@@ -129,7 +129,8 @@ def convert(md, lang):
         elif first.startswith("!["):
             m = re.match(r'!\[([^\]]*)\]\(([^\s)]+)(?:\s+"([^"]*)")?\)', first)
             cap = f"<figcaption>{inline(m.group(3))}</figcaption>" if m.group(3) else ""
-            out.append(f'<figure class="shot"><a href="{m.group(2)}"><img src="{m.group(2)}" alt="{html.escape(m.group(1), quote=True)}" loading="lazy"></a>{cap}</figure>')
+            src = m.group(2) if "://" in m.group(2) else rel + m.group(2)
+            out.append(f'<figure class="shot"><a href="{src}"><img src="{src}" alt="{html.escape(m.group(1), quote=True)}" loading="lazy"></a>{cap}</figure>')
         elif first.startswith("|"):
             rows = [[c.strip() for c in l.strip().strip("|").split("|")] for l in lines if not re.match(r"^\|\s*-", l)]
             head = "".join(f"<th>{inline(c)}</th>" for c in rows[0])
@@ -147,14 +148,19 @@ def convert(md, lang):
     return title, dek, "\n".join(out), toc
 
 # ---------------------------------------------------------------- page
-UI = {"zh": dict(lang="zh-CN", post="文章", toc="目录", date="2026/11/16", other="en/", css="style.css", home="./", theme="切换深浅色", by="Tacit 团队"),
-      "en": dict(lang="en", post="Post", toc="On this page", date="16 Nov 2026", other="../", css="../style.css", home="./", theme="Toggle theme", by="The Tacit team")}
+UI = {"zh": dict(lang="zh-CN", post="发布", deep="拆解", toc="目录", date="2026/11/16", theme="切换深浅色", by="Tacit 团队"),
+      "en": dict(lang="en", post="Launch", deep="Teardown", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="The Tacit team")}
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
-def page(lang, title, dek, body, toc):
-    u = UI[lang]
-    zh_href, en_href = ("./", "en/") if lang == "zh" else ("../", "./")
+def page(lang, title, dek, body, toc, rel, sub):
+    """rel: path from this page back to the site root; sub: "" for the launch post, "deep/" for the teardown."""
+    u = UI[lang]; here = lambda path: path or "./"
+    base = rel + ("en/" if lang == "en" else "")                     # this language's home
+    zh_href, en_href = here(rel + sub), rel + "en/" + sub
+    ON = ' class="on"'
+    nav = "".join("<a" + (ON if sub == s2 else "") + ' href="' + here(base + s2) + '">' + label + "</a>" for s2, label in (("", u["post"]), ("deep/", u["deep"])))
     toc_html = "".join(f'<a class="l{lv}" href="#{hid}">{html.escape(t)}</a>' for lv, hid, t in toc)
-    return f'''<!doctype html>
+    aside = f'<aside class="toc" aria-label="{u["toc"]}"><div>{toc_html}</div></aside>' if toc else ""
+    return f"""<!doctype html>
 <html lang="{u["lang"]}">
 <head>
 <meta charset="utf-8">
@@ -164,18 +170,18 @@ def page(lang, title, dek, body, toc):
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{u["css"]}">
+<link rel="stylesheet" href="{rel}style.css">
 <script>try{{var t=localStorage.getItem("tacit-theme");if(t)document.documentElement.setAttribute("data-theme",t)}}catch(e){{}}</script>
 </head>
 <body>
-<div class="page">
+<div class="page{"" if toc else " notoc"}">
 <aside class="side">
-  <a class="brand" href="{u["home"]}">{MARK}<span>Tacit</span></a>
-  <nav><a class="on" href="{u["home"]}">{u["post"]}</a><a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
+  <a class="brand" href="{here(base)}">{MARK}<span>Tacit</span></a>
+  <nav>{nav}<a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
 </aside>
 <main>
   <div class="bar">
-    <a class="brand sm" href="{u["home"]}">{MARK}<span>Tacit</span></a>
+    <a class="brand sm" href="{here(base)}">{MARK}<span>Tacit</span></a>
     <span class="sp"></span>
     <button class="theme" type="button" aria-label="{u["theme"]}" title="{u["theme"]}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
     <span class="langs"><a href="{zh_href}"{' class="on" aria-current="page"' if lang == "zh" else ""} lang="zh-CN">中文</a><i>/</i><a href="{en_href}"{' class="on" aria-current="page"' if lang == "en" else ""} lang="en">EN</a></span>
@@ -189,14 +195,14 @@ def page(lang, title, dek, body, toc):
 {body}
   </article>
 </main>
-<aside class="toc" aria-label="{u["toc"]}"><div>{toc_html}</div></aside>
+{aside}
 </div>
 <script>
 document.querySelector(".theme").addEventListener("click",function(){{var r=document.documentElement,d=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=d==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{{localStorage.setItem("tacit-theme",n)}}catch(e){{}}}});
 </script>
 </body>
 </html>
-'''
+"""
 
 CSS = r''':root{--bg:#fcfcfc;--fg:#202020;--p:#5c5c5c;--muted:#8d8d8d;--line:#e4e4e4;--card:#ffffff;--soft:#f3f3f3;
   --accent:#2f5bd8;--accent-soft:#e9efff;--you:#a8741a;--you-soft:#fcf1d6;--edge:#9b9b9b;
@@ -268,6 +274,7 @@ svg text{font-family:var(--sans);letter-spacing:0}
   .side nav{display:flex;flex-direction:column;gap:8px;margin-top:26px;font-size:15px}
   .side nav a{text-decoration:none;color:var(--muted)}
   .side nav a.on,.side nav a:hover{color:var(--fg)}
+  .page.notoc{grid-template-columns:190px 680px}
   .bar .brand.sm{display:none}
   .toc{display:block;position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:92px 0 40px;font-size:13.5px;line-height:1.45}
   .toc a{display:block;text-decoration:none;color:var(--muted);padding:4px 0}
@@ -279,14 +286,17 @@ svg text{font-family:var(--sans);letter-spacing:0}
 @media print{.side,.toc,.bar{display:none}}
 '''
 
+PAGES = [("zh", "zh.md", "", "", ""), ("zh", "zh-deep.md", "deep/", "../", "deep/"),
+         ("en", "en.md", "en/", "../", ""), ("en", "en-deep.md", "en/deep/", "../../", "deep/")]
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
-    (OUT / "en").mkdir(parents=True); (OUT / "img").mkdir()
+    (OUT / "img").mkdir(parents=True)
     for f in sorted((ROOT / "img").glob("*.jpg")): shutil.copy2(f, OUT / "img" / f.name)
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
-    for lang, dest in (("zh", OUT / "index.html"), ("en", OUT / "en" / "index.html")):
-        title, dek, body, toc = convert((ROOT / "content" / f"{lang}.md").read_text(encoding="utf-8"), lang)
-        dest.write_text(page(lang, title, dek, body, toc), encoding="utf-8")
+    for lang, src, outdir, rel, sub in PAGES:
+        title, dek, body, toc = convert((ROOT / "content" / src).read_text(encoding="utf-8"), lang, rel)
+        dest = OUT / outdir / "index.html"; dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(page(lang, title, dek, body, toc, rel, sub), encoding="utf-8")
         text = re.sub(r"<[^>]+>", "", re.sub(r"<svg.*?</svg>", "", body, flags=re.S))
-        print(dest.relative_to(ROOT), "| chars", len(re.sub(r"\s+", "", text)), "| h2", sum(1 for t in toc if t[0] == 2), "| h3", sum(1 for t in toc if t[0] == 3), "| figures", body.count("<figure"))
+        print(dest.relative_to(ROOT), "| chars", len(re.sub(r"\s+", "", text)), "| headings", len(toc), "| figures", body.count("<figure"))
 if __name__ == "__main__": main()
