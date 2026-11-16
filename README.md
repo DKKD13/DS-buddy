@@ -1,4 +1,4 @@
-![管理 agent，就是管理上下文](docs/site/blog/img/hero.jpg)
+![DS-buddy 的任务页：左边是执行者交回的结果，右边是这件事的上下文](docs/site/blog/img/hero.jpg)
 
 # DS-buddy
 

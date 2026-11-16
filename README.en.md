@@ -1,4 +1,4 @@
-![Managing agents is managing context](docs/site/blog/img/hero.jpg)
+![A DS-buddy task page: the executor's result on the left, the job's context on the right](docs/site/blog/img/hero.jpg)
 
 # DS-buddy
 
