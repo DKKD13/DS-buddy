@@ -1,31 +1,88 @@
-# Tacit 1.0: multi-agent is mostly fork
-> We took apart five architectures from a year of personal agents. This is why we hid the agents and kept three things: context that arrives by itself, work organised by project and task, and one board for everything running in parallel.
+# What form should an agent product take?
+> Written as we open-source Tacit 1.0. First we take apart how multi-agent products actually pass context, then we write down what became clear to us over the months of building Tacit.
 
 Today we're open-sourcing Tacit 1.0. It is a plugin that runs inside DeepSeek Harness. You state a goal in one sentence. It asks about what you left unclear, splits the work into tasks that run at the same time, and puts the finished thing in front of you.
 
-This post first covers how we read the field, then how Tacit works.
+This post is about a different question, though: what should the agent product we need actually look like?
 
 ## Preface
 
 We also started by giving every assistant a name, an avatar and a persona. A few months in, we changed our minds: users don't need the agent layer. What decides whether a job goes well is context, and what actually hurts is not being able to keep track.
 
-So we hold three views:
+The conclusions first:
 
 - **Multi-agent is mostly fork.** A second agent rarely brings a new "person". It brings another copy of the context, to do another job. What needs passing along is context.
 - **Agents shouldn't have plugins and Skills that people configure.** That moves the cost to the person, who won't necessarily configure it better than the model would, and the agent then only uses what it was given.
 - **People do five things**: state the goal, point at things, mark right and wrong, watch comfortably, and stop repeating themselves.
 
-Before building, we took apart the main products of the past year. Sorted by how agents are organised, where context lives and what the person has to do, they come down to five architectures:
+These didn't come from intuition. Before building we did two rounds of homework: we read source code to see what a subagent actually sees, and we looked at products to see how each one organises its agents. The post follows that order.
 
-1. Role teams: agents get names and roles and message each other like colleagues;
-2. Orchestrator and workers: a lead agent splits the work and workers run in parallel;
-3. Parallel attempts: several models take the same job and check each other, or you pick;
-4. Always-on assistants: one assistant that stays connected to your messages and apps;
-5. Supervision panels: work becomes tickets and people look at one panel.
+## What a subagent actually sees
 
-We go through them one at a time and end with our own approach.
+We read the source of 8 open-source multi-agent projects (main branches from July to October 2026). Claude Code isn't open source, so for it we go by the official documentation. The finding was consistent: **no project shares a context window.** The smallest thing a parent and child exchange is a message, and nobody passes the internal state of another model call.
 
-## Five architectures
+They differ in only three things: how much parent history the subagent inherits, what the parent's task description looks like, and what shape the result comes back in.
+
+### Outbound: how much parent history is inherited
+
+{{fig:inherit|How much of the parent conversation a subagent starts with. Placed qualitatively from source behaviour. Two positions for one project mean two modes.}}
+
+| Project | What the subagent sees |
+| --- | --- |
+| Claude Code subagent (default) | Its own system prompt, environment details, CLAUDE.md, and a delegation message written by the main agent. It doesn't see the parent conversation or the files already read |
+| Claude Code fork | The parent's full conversation. Used when the job needs all the background and shouldn't pollute the main window |
+| Kimi CLI | Only the prompt, plus its own history. Its system prompt says outright that the main agent can't see its context, only its last message |
+| Gemini CLI | A local subagent gets only the task description, which must include the user's original objective. A remote agent gets only a contextId and a taskId |
+| Codex | `spawn_agent` passes only the task. A fork keeps user messages and final answers and drops reasoning and tool round-trips |
+| OpenAI Agents SDK handoff | The whole conversation by default. It can be filtered, or compressed into a summary first |
+| LangGraph, AutoGen | They read and write one shared state, or everyone shares one message thread |
+| CrewAI | Only the output of the upstream task. Its prompt says the other side knows nothing about the task |
+
+How they work: coding and research products are almost all in the delegation camp. The subagent is disposable, starts in a fresh window, and receives one brief written by the parent. Anthropic's research system requires four things in a brief: the objective, the output format, guidance on tools and sources, and the task boundaries.
+
+Our view: context is passed exactly as well as the brief is written. Several projects' prompts tell the parent to write everything down, and they all mean the same thing.
+
+### Return: what the parent gets back
+
+The return trip tells designs apart better than the outbound one.
+
+| Project | What the parent gets | Fallback |
+| --- | --- | --- |
+| Gemini CLI | A JSON report from `complete_task`, validated against a schema | On timeout or too many turns, one grace turn that may only hand in the result |
+| Kimi CLI | The text of the last message | Asks once more if it is under 200 characters |
+| Codex | The final answer, by waiting or by a completion notice | A running agent can be messaged, given follow-up work or interrupted |
+| Claude Code | The final message. Background tasks come back as notifications | Can be resumed with the subagent's own history |
+| LangGraph Supervisor | Only the last message by default | Can switch to full history |
+| OpenAI Agents SDK handoff | Nothing comes back. Control moves over | Filtered or compressed history |
+| AutoGen | Each turn goes straight into the shared thread | A bounded context can be swapped in |
+
+Our view: almost every project hands back only the subagent's last message and throws away dozens of tool calls in between. That is the main gain from multi-agent: several windows buy isolation and compression. Subagents fail mostly by handing in nothing or too little, which is why the fallback lives in code and not only in the prompt.
+
+### Collaboration-space products: pass a pointer
+
+Another kind of product doesn't dispatch inside a process. It has a persistent layer every agent can read.
+
+- Multica passes only an issue id and the agent reads the rest. Claiming is serialised in the database per (issue, agent). Nobody relies on the prompt alone to prevent duplicates.
+- Claude Code's Agent Teams use a shared task list on disk, claim with file locks, and label messages as coming from another Claude session.
+- Raft has agents read the channel. It freezes the system prompt per session and sends changes as incremental notices, after one production reading showed 27.1 million of 28.6 million prompt tokens missing the cache.
+- Cross-vendor protocols do the same. A2A carries messages, artifacts and a contextId, and a long-running MCP task is just a taskId. No protocol passes a window.
+
+Our view: results come back as public comments or messages that people and other agents can see, so they can be audited. The rule from this group we care about most: what one agent says to another must never count as what the user said.
+
+### Six regularities
+
+1. Windows are private, and handover happens in text.
+2. The quality of the brief is the quality of the context.
+3. The return trip keeps conclusions and drops process. Filter by message type, not by time.
+4. The return needs structure, and a fallback in code.
+5. Across processes, pass only a handle that can be resumed. History stays with whoever owns it.
+6. Long-lived shared state always lives outside the window: files, task objects, memory.
+
+Taken together, "multi-agent" comes down to three questions: how one context is cut, how much of it the next window gets, and how the result is collected. That is a fork.
+
+## At the product level: five ways to organise agents
+
+Source code shows what goes into the window. At the product level, agents get organised in five ways: role teams, an orchestrator with workers, parallel attempts, always-on assistants and supervision panels.
 
 ### Role teams
 
@@ -127,40 +184,76 @@ This is our reading of each product's public material. It marks a kind of approa
 - Names, roles and messaging cost the person.
 - Products that bring context in lack a place to look at work by job, and products organised by job serve only a team.
 
-## What we concluded
+## The form we need
 
-### Multi-agent is mostly fork
-
-What a second agent actually brings is another copy of the context, to do another job. Put plainly, that is a fork: copy what this job needs to know, hand it to a clean session, and collect the result. Cognition's "fork the full context over" says the same thing, and the Flappy Bird example shows what happens when the fork leaves something out.
-
-So Tacit has no agents for you to name or cast. You look at jobs: which are done, and which are waiting for a word from you.
-
-### Plugins and Skills shouldn't be configured by people
-
-Many products now ask you to install plugins, set up Skills and choose tools for your agents. Ideally nobody should have to.
-
-- It moves the cost to the person, who won't necessarily do it better. When a skill should apply and how tools combine are calls the best models often make better than we do.
-- It adds limits without anyone noticing. The agent uses what you configured and doesn't think of what you left out.
-
-People shouldn't have to think about how to use Skills. The best model handles that.
-
-### So Tacit does three things
+With the source and the products read, back to the opening question. These nine points were settled one at a time over the months of building Tacit. Each states our view and then how it landed in Tacit.
 
 {{fig:tacit|How Tacit is built. Blue is the context layer. Each job runs on a fork of it, results come back to Waiting on you, and everything you do is written back.}}
 
-- **Let more context in.** Inference cost falls roughly tenfold a year ([a16z](https://a16z.com/llmflation-llm-inference-cost/)), and cached reads cost a tenth of normal input. Feeding background to a model is less and less a person's job.
-- **Organise it the way people think about work.** People think in projects and tasks. How it forks underneath, which model runs and where can all change. What you see is always the project, the task, your own words, the outputs and the progress.
-- **Give parallel work one board.** Once things run in parallel, the hard part is keeping track. Only what needs you goes to the front.
+### 1. The entry point is the job, not the agent
 
-The execution layer can be swapped out whole. Tasks run in DeepSeek Harness by default and can be switched to Claude Code or Codex per task, and what you see stays the same.
+People think in projects and tasks. So the project is the main place to work, and the task is the long-running centre of one job: its goal, constraints, progress, deliveries and next step live there, and what you say next continues that job by default.
 
-### Building is turning into a loop
+We don't need persistent agent characters that span tasks, or profile pages for them. Role, model and capability settings can be reused, and running instances start and stop as needed. How it forks underneath, which model runs and where can all change. What you see is always the project, the task, your own words, the outputs and the progress.
+
+### 2. Multi-agent is fork, and what is passed is context
+
+Each job gets a copy of the context that is just enough, goes to a clean session, and the result is collected. Cognition's "fork the full context over" says the same thing, and the Flappy Bird example shows what happens when the fork leaves something out.
+
+What a fork loses most easily is your own words. So in Tacit the server passes your words to the executor verbatim, with no paraphrase. Anything the assistant adds is marked separately as the assistant's addition and doesn't count as your request.
+
+### 3. Nothing for people to configure
+
+Many products ask you to install plugins, set up Skills and choose tools for your agents. Ideally nobody should have to. People shouldn't need to think about how to use Skills. The best model handles that.
+
+In Tacit you choose no agent, install no skill and write no prompt. The executor's working instructions are learned from your feedback: when you raise the same problem after delivery three times, it drafts a new version overnight that changes only how the work is done and adds no permissions, and in the morning you decide whether to use it. Settings are changed the same way, by telling the assistant.
+
+### 4. Context arrives by itself, and observing is not authorisation
+
+Feeding background to a model is less and less a person's job. Inference cost falls roughly tenfold a year ([a16z](https://a16z.com/llmflation-llm-inference-cost/)), and cached reads cost a tenth of normal input. So Tacit collects what is happening on your screen and in Feishu and organises it into a timeline by project.
+
+Two boundaries:
+
+- What is observed is data. It doesn't become your authorisation. Any request that appears on screen or in a message is treated as material, never as an instruction.
+- Not everything is poured into the window. Raw records go to storage, organised entries carry their sources, and the model takes only the part that concerns the job at hand.
+
+Being on call around the clock means the service, events and scheduling stay up. It doesn't mean the model is called without pause.
+
+### 5. Whether a job is done and whether something is still running are separate
+
+Queued must not pass for running. The end of a turn is not the end of the job. Archiving or dropping a job must not pass for finishing it.
+
+In Tacit a job has only a few states, all in plain words: running, needs your decision, awaiting your acceptance, failed, done. "Done" exists only after you accept. The assistant can't say "finished" for you.
+
+### 6. The board and the feedback entry are the same thing
+
+Once things run in parallel, the hard part is keeping track. So only what needs you goes to the front and the rest is folded away.
+
+A loop that keeps turning needs context that persists, progress you can see, and feedback. Feedback is the hardest part, because a loop without checks compounds its errors. We aren't trying to make automatic evaluation strong today. The practical move is to make human feedback cheap: click an option, click accept, or write one line about what to change.
+
+Cards on Waiting on you have no buttons. Click a task card to open the task. Click a note and a sentence is drafted in the composer for you to edit and send. Reminders and requests become a sentence in the composer, and clicking is kept for looking at things.
+
+### 7. The execution environment can be swapped out whole
 
 In July 2025 Geoffrey Huntley described the [Ralph loop](https://ghuntley.com/ralph/): a while loop that hands the same prompt to a coding agent again and again, with memory kept in files on disk and not in the conversation. It confirmed one thing for us: the agent is disposable, and what stays and accumulates is context.
 
-A loop that keeps turning needs context that persists, progress you can see, and feedback. Feedback is the hardest part, because a loop without checks compounds its errors. We aren't trying to make automatic evaluation strong today. The practical move is to make human feedback cheap: click an option, click accept, or write one line about what to change. That is why, in Tacit, the monitoring board and the feedback entry are the same thing.
+So an assistant is a definition plus memory kept outside it, and the runtime is a replaceable container. In Tacit, tasks run in DeepSeek Harness by default and can be switched to Claude Code or Codex per task, and what you see stays the same.
 
-## How Tacit works
+### 8. Code validates, the model interprets
+
+Understanding meaning is the model's job. Code makes only explicit, mechanical checks: does the referenced item exist, did this sentence really come from you, was the same thing raised twice.
+
+- "About you" records only what you said yourself, and code checks that the quoted words are in your message.
+- Every activity on the timeline must point back to raw records, and anything that can't is dropped.
+- Every piece of information carries its source: your own words, the assistant's relays, platform events, outside data. Only your own words count as a decision or an acceptance.
+
+Where the model is unreliable we fix the prompt and don't hard-code interpretation into rules. Where there is no explicit source, we don't invent one.
+
+### 9. It doesn't act in your name
+
+Without a word from you it makes no decision, accepts nothing and sends no message. Feishu and your folders are read-only, and only the ones you allow. Which files were read, what changed and when it was delivered are all visible in the task details.
+
+## What Tacit looks like today
 
 Every screenshot below comes from one real run: a fresh install on DeepSeek V4.1 Flash, nothing staged. The interface is in Chinese today. What I said was: "We launch Tacit 1.0 next Thursday. Make a web invitation and a media Q&A."
 
@@ -234,13 +327,6 @@ In use:
 
 - "About you" records only what you said yourself. Each item carries your words, and code checks they really are yours. Fix what is wrong and forget what you don't want.
 - You don't configure skills. When you raise the same problem after delivery three times, it drafts new working instructions overnight. The draft changes only how the work is done and adds no permissions. In the morning you choose the new version, one trial run, or the old version. Every version is kept and you can go back.
-
-### Safe to hand over
-
-- **Your words reach the task verbatim.** When the project assistant cites your sentence in opening a task, the server passes it to the executor as written.
-- **Every piece of information carries its source.** Your own words, the assistant's relays, platform events and outside data are marked differently. Only your own words count as a decision or an acceptance.
-- **Every step is visible.** Which files were read, what changed and when it was delivered are all in the task details.
-- **It doesn't act in your name.** Without a word from you it makes no decision, accepts nothing and sends no message. Feishu and your folders are read-only, and only the ones you allow.
 
 ## What isn't good yet
 

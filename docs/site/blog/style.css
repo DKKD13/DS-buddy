@@ -50,7 +50,7 @@ th,td{text-align:left;vertical-align:top;padding:8px 14px 8px 0;border-bottom:.5
 th{font-weight:500;color:var(--fg);border-bottom-color:var(--muted)}
 td{color:var(--p)}
 td:first-child{color:var(--fg);white-space:nowrap}
-tbody tr:last-child td{color:var(--fg);border-bottom:0}
+tbody tr:last-child td{border-bottom:0}
 .d-n{fill:var(--card);stroke:var(--edge);stroke-width:1}
 .d-ctx{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
 .d-you{fill:var(--you-soft);stroke:var(--you);stroke-width:1}

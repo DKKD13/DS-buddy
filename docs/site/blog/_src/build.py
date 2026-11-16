@@ -17,7 +17,8 @@ L = {
             panel="面板：只列需要人的事", state="状态", result="结果", onlythis="只看这一块",
             say="你说的话", screen="屏幕", feishu="飞书", local="电脑里的文件", ctx="上下文层", log="事件日志", tl="时间线",
             memory="记忆", pt="项目 → 任务", t="任务", fork="fork", inbox="待你决定", needs="只列需要你的",
-            wb="拍板、验收、要改，都记回去", r1="结果", r2="回到", r3="一处"),
+            wb="拍板、验收、要改，都记回去", r1="结果", r2="回到", r3="一处",
+            z1="只有 brief", z2="过滤或压缩后的历史", z3="完整历史", loc="（本地）", rem="（远程 A2A）", dflt="（默认）", tacitrow="Tacit：任务说明 + 你的原话 + 项目文件"),
  "en": dict(you="You", board="Board / group chat", assign="assign, chase progress", pm="PM", des="Designer", eng="Engineer", own="its own context",
             talk="They message and relay to each other; one context each", lead="Orchestrator", ask="one question", worker="Worker", clean="clean context",
             back="No cross-talk; only conclusions come back", task="The same task", ma="Model A", mb="Model B", mc="Model C", merge="Merge, or you pick",
@@ -26,7 +27,8 @@ L = {
             panel="Panel: only what needs a person", state="state", result="result", onlythis="looks here only",
             say="What you say", screen="Screen", feishu="Feishu", local="Files on your Mac", ctx="Context layer", log="Event log", tl="Timeline",
             memory="Memory", pt="Project → task", t="Task", fork="fork", inbox="Waiting on you", needs="only what needs you",
-            wb="every click is written back", r1="results", r2="come", r3="back"),
+            wb="every click is written back", r1="results", r2="come", r3="back",
+            z1="Brief only", z2="Filtered or compressed history", z3="Full history", loc=" (local)", rem=" (remote A2A)", dflt=" (default)", tacitrow="Tacit: task brief + your own words + project files"),
 }
 
 def box(cx, cy, w, h, text, cls="n", bold=False):
@@ -89,7 +91,17 @@ def fig_tacit(t, cap):
     b += box(520, 270, 150, 34, t["inbox"]) + arrow("M445 270 H339", m) + txt(392, 260, t["needs"]) + box(305, 270, 64, 30, t["you"], "you")
     b += arrow("M305 255 V214", m) + txt(296, 240, t["wb"], "end")
     return svg("tacit", 300, b, cap)
-FIGS = dict(roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
+def fig_inherit(t, cap):
+    m = "ar-inherit"; cols = {120: ["Claude Code subagent" + t["dflt"], "Kimi CLI", "Gemini CLI" + t["loc"], "Codex spawn_agent", "DeepAgents task", "CrewAI"],
+                              340: ["Gemini CLI" + t["rem"], "OpenAI nest_handoff_history", "Codex fork", "DeepAgents fork"],
+                              560: ["Claude Code fork", "OpenAI Agents SDK handoff", "LangGraph Supervisor", "AutoGen GroupChat"]}
+    b = arrow("M24 34 H656", m) + line("M230 46 V238").replace('class="d-e"', 'class="d-e d-dash"') + line("M450 46 V238").replace('class="d-e"', 'class="d-e d-dash"')
+    for x, name in ((120, t["z1"]), (340, t["z2"]), (560, t["z3"])): b += txt(x, 22, name, cls="d-t d-b")
+    for x, names in cols.items():
+        for k, name in enumerate(names): b += box(x, 66 + 30 * k, 196, 24, name)
+    b += box(230, 262, 330, 28, t["tacitrow"], "ctx")
+    return svg("inherit", 286, b, cap)
+FIGS = dict(inherit=fig_inherit, roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
 
 # ---------------------------------------------------------------- tiny markdown
 BULLET = re.compile(r"^(- |\d+\. )")
@@ -238,7 +250,7 @@ th,td{text-align:left;vertical-align:top;padding:8px 14px 8px 0;border-bottom:.5
 th{font-weight:500;color:var(--fg);border-bottom-color:var(--muted)}
 td{color:var(--p)}
 td:first-child{color:var(--fg);white-space:nowrap}
-tbody tr:last-child td{color:var(--fg);border-bottom:0}
+tbody tr:last-child td{border-bottom:0}
 .d-n{fill:var(--card);stroke:var(--edge);stroke-width:1}
 .d-ctx{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
 .d-you{fill:var(--you-soft);stroke:var(--you);stroke-width:1}
