@@ -18,7 +18,9 @@ L = {
             say="你说的话", screen="屏幕", feishu="飞书", local="电脑里的文件", ctx="上下文层", log="事件日志", tl="时间线",
             memory="记忆", pt="项目 → 任务", t="任务", fork="fork", inbox="待你决定", needs="只列需要你的",
             wb="拍板、验收、要改，都记回去", r1="结果", r2="回到", r3="一处",
-            z1="只有 brief", z2="过滤或压缩后的历史", z3="完整历史", loc="（本地）", rem="（远程 A2A）", dflt="（默认）", tacitrow="Tacit：任务说明 + 你的原话 + 项目文件"),
+            z1="只有 brief", z2="过滤或压缩后的历史", z3="完整历史", loc="（本地）", rem="（远程 A2A）", dflt="（默认）", tacitrow="DS-buddy：任务说明 + 你的原话 + 项目文件",
+            p1="要做什么", p2="上下文在哪", p3="标准是什么", ptitle="任务的上下文包", pr1="目标和背景", pr2="你的原话", pr3="怎么算完成", pr4="进展和产出", pr5="读过的文件",
+            prt="执行的 runtime（一次性）", pin="开工时注入", pout="进展写回", pkeep="长期维护", pswap="随时可以换"),
  "en": dict(you="You", board="Board / group chat", assign="assign, chase progress", pm="PM", des="Designer", eng="Engineer", own="its own context",
             talk="They message and relay to each other; one context each", lead="Orchestrator", ask="one question", worker="Worker", clean="clean context",
             back="No cross-talk; only conclusions come back", task="The same task", ma="Model A", mb="Model B", mc="Model C", merge="Merge, or you pick",
@@ -28,7 +30,9 @@ L = {
             say="What you say", screen="Screen", feishu="Feishu", local="Files on your Mac", ctx="Context layer", log="Event log", tl="Timeline",
             memory="Memory", pt="Project → task", t="Task", fork="fork", inbox="Waiting on you", needs="only what needs you",
             wb="every click is written back", r1="results", r2="come", r3="back",
-            z1="Brief only", z2="Filtered or compressed history", z3="Full history", loc=" (local)", rem=" (remote A2A)", dflt=" (default)", tacitrow="Tacit: task brief + your own words + project files"),
+            z1="Brief only", z2="Filtered or compressed history", z3="Full history", loc=" (local)", rem=" (remote A2A)", dflt=" (default)", tacitrow="DS-buddy: task brief + your own words + project files",
+            p1="What to do", p2="Where context is", p3="The standard", ptitle="The task's context pack", pr1="Goal and background", pr2="Your own words", pr3="What counts as done", pr4="Progress and outputs", pr5="Files read",
+            prt="Runtimes (disposable)", pin="injected at start", pout="progress written back", pkeep="maintained over time", pswap="swappable any time"),
 }
 
 def box(cx, cy, w, h, text, cls="n", bold=False):
@@ -101,7 +105,18 @@ def fig_inherit(t, cap):
         for k, name in enumerate(names): b += box(x, 66 + 30 * k, 196, 24, name)
     b += box(230, 262, 330, 28, t["tacitrow"], "ctx")
     return svg("inherit", 286, b, cap)
-FIGS = dict(inherit=fig_inherit, roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
+def fig_pack(t, cap):
+    m = "ar-pack"; b = box(80, 30, 64, 30, t["you"], "you") + line("M80 45 V57")
+    for y, name in ((72, t["p1"]), (125, t["p2"]), (178, t["p3"])): b += box(80, y, 130, 30, name) + line(f"M145 {y} H160")
+    b += line("M160 72 V178") + arrow("M160 125 H183", m)
+    b += box(285, 125, 200, 206, "", "ctx") + txt(285, 46, t["ptitle"], cls="d-t d-b")
+    for k, name in enumerate((t["pr1"], t["pr2"], t["pr3"], t["pr4"], t["pr5"])): b += box(285, 74 + 31 * k, 168, 25, name)
+    b += '<rect class="d-g" x="520" y="44" width="148" height="162" rx="6"/>' + txt(594, 34, t["prt"])
+    for y, name in ((80, "DeepSeek Harness"), (125, "Claude Code"), (170, "Codex")): b += box(594, y, 124, 28, name)
+    b += arrow("M386 104 H518", m) + txt(452, 96, t["pin"]) + arrow("M518 150 H388", m) + txt(452, 166, t["pout"])
+    b += txt(285, 248, t["pkeep"], cls="d-a") + txt(594, 226, t["pswap"])
+    return svg("pack", 258, b, cap)
+FIGS = dict(inherit=fig_inherit, pack=fig_pack, roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
 
 # ---------------------------------------------------------------- tiny markdown
 BULLET = re.compile(r"^(- |\d+\. )")
@@ -112,9 +127,13 @@ def inline(s):
     return re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", r'<a href="\2">\1</a>', s)
 def convert(md, lang, rel=""):
     blocks = [b.strip("\n") for b in re.split(r"\n\s*\n", md.strip())]
-    out, toc, title, dek, n2, n3 = [], [], "", "", 0, 0
+    out, toc, title, dek, n2, n3, kicker = [], [], "", "", 0, 0, ""
     for b in blocks:
         lines = b.split("\n"); first = lines[0]
+        if first.startswith("^ "):
+            kicker = first[2:].strip(); lines = lines[1:]
+            if not lines: continue
+            first = lines[0]
         if first.startswith("# "):
             title = first[2:].strip()
             if len(lines) > 1 and lines[1].startswith("> "): dek = lines[1][2:].strip()
@@ -142,16 +161,16 @@ def convert(md, lang, rel=""):
             out.append(f"<{tag}>{items}</{tag}>")
         else:
             text = " ".join(lines)
-            cls = ' class="lab"' if re.match(r"^(做法|观点|代表|How (they|it) works?|Our view|Examples?)[:：]", text) else ""
-            text = re.sub(r"^(做法|观点|代表|How (?:they|it) works?|Our view|Examples?)([:：])", r"<b>\1</b>\2", inline(text)) if cls else inline(text)
+            cls = ' class="lab"' if re.match(r"^(做法|观点|代表|How (they|it) works?|My view|Our view|Examples?)[:：]", text) else ""
+            text = re.sub(r"^(做法|观点|代表|How (?:they|it) works?|My view|Our view|Examples?)([:：])", r"<b>\1</b>\2", inline(text)) if cls else inline(text)
             out.append(f"<p{cls}>{text}</p>")
-    return title, dek, "\n".join(out), toc
+    return title, dek, "\n".join(out), toc, kicker
 
 # ---------------------------------------------------------------- page
-UI = {"zh": dict(lang="zh-CN", post="发布", deep="拆解", toc="目录", date="2026/11/16", theme="切换深浅色", by="Tacit"),
-      "en": dict(lang="en", post="Launch", deep="Teardown", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="Tacit")}
+UI = {"zh": dict(lang="zh-CN", post="短文", deep="长文", toc="目录", date="2026/11/16", theme="切换深浅色", by="DS-buddy"),
+      "en": dict(lang="en", post="Short", deep="Long read", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="DS-buddy")}
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
-def page(lang, title, dek, body, toc, rel, sub):
+def page(lang, title, dek, body, toc, rel, sub, kicker=""):
     """rel: path from this page back to the site root; sub: "" for the launch post, "deep/" for the teardown."""
     u = UI[lang]; here = lambda path: path or "./"
     base = rel + ("en/" if lang == "en" else "")                     # this language's home
@@ -165,7 +184,7 @@ def page(lang, title, dek, body, toc, rel, sub):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(title)} | Tacit</title>
+<title>{html.escape(title)} | DS-buddy</title>
 <meta name="description" content="{html.escape(dek, quote=True)}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,18 +195,19 @@ def page(lang, title, dek, body, toc, rel, sub):
 <body>
 <div class="page{"" if toc else " notoc"}">
 <aside class="side">
-  <a class="brand" href="{here(base)}">{MARK}<span>Tacit</span></a>
+  <a class="brand" href="{here(base)}"><span>DS-buddy</span></a>
   <nav>{nav}<a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
 </aside>
 <main>
   <div class="bar">
-    <a class="brand sm" href="{here(base)}">{MARK}<span>Tacit</span></a>
+    <a class="brand sm" href="{here(base)}"><span>DS-buddy</span></a>
     <span class="sp"></span>
     <button class="theme" type="button" aria-label="{u["theme"]}" title="{u["theme"]}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
     <span class="langs"><a href="{zh_href}"{' class="on" aria-current="page"' if lang == "zh" else ""} lang="zh-CN">中文</a><i>/</i><a href="{en_href}"{' class="on" aria-current="page"' if lang == "en" else ""} lang="en">EN</a></span>
   </div>
   <article>
     <header>
+      {f'<p class="kick">{inline(kicker)}</p>' if kicker else ""}
       <h1>{inline(title)}</h1>
       <p class="meta">{u["by"]} <i>·</i> {u["date"]}</p>
       <p class="dek">{inline(dek)}</p>
@@ -229,6 +249,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-off
 .langs a.on{color:var(--fg);font-weight:500}
 .langs i{font-style:normal;color:var(--muted);margin:0 7px}
 article header{margin-bottom:34px}
+.kick{font-size:14px;color:var(--muted);margin:0 0 10px}
 h1{font-size:30px;line-height:1.3;font-weight:500;letter-spacing:-.02em;margin:0 0 12px;text-wrap:balance}
 .meta{font-size:14.5px;color:var(--muted);margin:0 0 16px}
 .meta i{font-style:normal;margin:0 4px}
@@ -262,6 +283,7 @@ tbody tr:last-child td{border-bottom:0}
 .d-you{fill:var(--you-soft);stroke:var(--you);stroke-width:1}
 .d-e{fill:none;stroke:var(--edge);stroke-width:1.2}
 .d-dash{stroke-dasharray:4 4}
+.d-g{fill:none;stroke:var(--edge);stroke-width:1;stroke-dasharray:5 4}
 .d-h{fill:var(--edge)}
 svg text{font-family:var(--sans);letter-spacing:0}
 .d-t{fill:var(--fg);font-size:13px}
@@ -294,9 +316,9 @@ def main():
     for f in sorted((ROOT / "img").glob("*.jpg")): shutil.copy2(f, OUT / "img" / f.name)
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
     for lang, src, outdir, rel, sub in PAGES:
-        title, dek, body, toc = convert((ROOT / "content" / src).read_text(encoding="utf-8"), lang, rel)
+        title, dek, body, toc, kicker = convert((ROOT / "content" / src).read_text(encoding="utf-8"), lang, rel)
         dest = OUT / outdir / "index.html"; dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(page(lang, title, dek, body, toc, rel, sub), encoding="utf-8")
+        dest.write_text(page(lang, title, dek, body, toc, rel, sub, kicker), encoding="utf-8")
         text = re.sub(r"<[^>]+>", "", re.sub(r"<svg.*?</svg>", "", body, flags=re.S))
         print(dest.relative_to(ROOT), "| chars", len(re.sub(r"\s+", "", text)), "| headings", len(toc), "| figures", body.count("<figure"))
 if __name__ == "__main__": main()
