@@ -59,7 +59,9 @@ test('GC refuses to run without a live event reference provider', async t => {
 test('quota collection can reclaim only expired unreferenced capacity before a new write', async t => {
   const f = await setup(t, { quotaBytes: 8 }), orphan = await f.blobs.put(f.id, Buffer.alloc(8, 7))
   const old = Date.now() / 1000 - 60;await utimes(f.blobs.location(f.id, orphan), old, old)
-  new BlobMaintenance(f.blobs, { liveKeys: () => liveBlobKeysFromStore(f.store, f.blobs), quotaBytes: 8, retentionMs: 50 })
+  // Five seconds, not 50 ms: the orphan is a minute old either way, but the write's own temporary file must stay younger
+  // than the retention until the collection runs, and on a loaded machine 50 ms was not enough (ENOENT on link).
+  new BlobMaintenance(f.blobs, { liveKeys: () => liveBlobKeysFromStore(f.store, f.blobs), quotaBytes: 8, retentionMs: 5_000 })
   assert.equal((await f.blobs.put(f.id, Buffer.from('new'))).length, 64)
   assert.equal(await f.blobs.usage(), 3)
 })
