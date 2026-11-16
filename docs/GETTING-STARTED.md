@@ -6,7 +6,7 @@
 
 | 必须 | 说明 |
 | --- | --- |
-| DeepSeek Harness 0.2.x | 用它的 Web profile。Tacit 是它的一个插件。 |
+| DeepSeek Harness 0.2.x | Tacit 是它的一个插件，用的是它的 Web profile。没装过的话：`npm install -g @deepseek-ai/dsh`。在 0.2.1 上测过。 |
 | Node 24 以上 | 跑插件和单测。 |
 
 可选：
@@ -23,12 +23,6 @@ git clone https://github.com/DKKD13/tacit-dsh
 cd tacit-dsh/plugin && npm test        # 全部单测，应当全过
 dsh plugin --profile web add "$(pwd)"
 dsh --profile web
-```
-
-Mac 上想先在一个独立的试用环境里看：
-
-```sh
-bash scripts/install-mac.sh                # 建一个试用 profile（mira-qa），端口 18180
 ```
 
 打开后，左侧导航多出「个人助理」和「项目」。

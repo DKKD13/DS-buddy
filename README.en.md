@@ -1,77 +1,92 @@
 # Tacit
 
-**Say one sentence. Tacit gets it.**
+**Say the goal. Make the calls.**
 
-Tacit is a context layer inside DeepSeek Harness (DSH). It sorts what is scattered across your chats, projects, Feishu and computer by project and task, so every agent gets exactly the context it needs. You state the goal. You are called only when something needs your decision.
+Tacit is an open-source plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). You state a goal in one sentence. It asks about what you left unclear, splits the work into tasks that run at the same time, and brings finished work back to you. In between, it comes to you only when a decision is yours to make.
 
-[中文](README.md)
+[Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Launch post](https://dkkd13.github.io/tacit-dsh/site/blog/en/) · [65-second film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
 
-![The decisions board](docs/site/assets/board.webp)
+![One request, from the first sentence to finished work](docs/launch/demo.gif)
 
-Product page: [dkkd13.github.io/tacit-dsh/site](https://dkkd13.github.io/tacit-dsh/site/) · 65-second film: [`https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4`](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
+## An example
 
-## What it is
+In a project, you say:
 
-- A **personal assistant** watches all your projects, remembers what you said in your own words, and tells you when something waits on you.
-- Each **project** has a project assistant. You say one thing; it asks what it must know, then opens tasks and hands them to executors. What can run in parallel does.
-- **Executors** do the work: write documents, build pages, change code. Finished work goes to the project's shared files and waits for you to accept it.
-- A small **pixel tile** in the corner shows what the assistant is doing: working, waiting on you, or done. ⌥M calls it up.
+> Tacit 1.0 launches next Thursday. Make a web invitation and a press Q&A.
 
-## How one request runs
+Then:
 
-| 1 It asks first | 2 You can see how it is going |
+1. **It asks first.** Which Thursday do you mean, and what colour should the invitation use? Whatever does not depend on the answer starts right away.
+2. **It splits the work and runs it in parallel.** The invitation and the Q&A are two tasks, each with its own executor.
+3. **When a call is yours, you get a card with options.** The recommended one is marked. If none fits, just say so.
+4. **What comes back is finished work.** The page opens, the document reads. The task is done only when you click accept.
+
+| 1 It asks first | 2 You decide |
 | --- | --- |
-| ![The project assistant asks about the palette and the date](docs/launch/clarify.png) | ![Task page](docs/launch/task-board.png) |
-| You say “Tacit 1.0 launches next Thursday, make the invitation and the press Q&A”. It starts what it can, then asks about the palette and which Thursday you mean. | The task page: the brief with your own words, what counts as done, files read, progress by time, and who executes. |
+| ![The project assistant asks about the colour and the date](docs/launch/clarify.png) | ![An option card](docs/launch/decision.png) |
 
-| 3 Finished work comes back | 4 Everything that needs you, on one board |
+| 3 You can see how far it is | 4 Finished work comes back |
 | --- | --- |
-| ![A delivered web page opens in the panel](docs/launch/delivery.png) | ![Decisions board](docs/site/assets/app.webp) |
-| Web pages render in the panel, images show, documents preview. Accept, or ask for a change. | Waiting on you, running, done today. Cards have no buttons: click a task to open it, click a message and a reply is drafted in the input box. |
+| ![Task page](docs/launch/task-board.png) | ![A delivered web page opens in the panel](docs/launch/delivery.png) |
 
-## Features
+Everything that waits on you sits on one board:
 
-- **Decisions board.** One board across every project. Deliveries to accept, questions to answer, failed tasks, Feishu messages you have not replied to and the assistant's reminders all sit in the first lane.
-- **Task page.** Brief, checklist, output, files read, timeline, executor and model. Take a task over yourself, then hand it back.
-- **Decisions and acceptance.** When an executor needs a decision it shows an option card with the recommended choice marked. Accepting is always yours.
-- **Swappable executors.** Each task runs on DSH by default. If Claude Code or Codex is on the machine, switch the task to it. What you type follows the task. Claude Code has been run for real; Codex is unit-tested and starts, but a full task run on Codex with its own model has not been verified yet (see `docs/TESTING.md`). Both run without permission prompts or a sandbox: they can read and write whatever your OS user can.
-- **Memory with a source.** “About you” keeps only what you said yourself, each line with the original quote, and can be undone. Work memory carries its evidence.
-- **A night pass.** When the computer is idle at night, the assistant reviews the day and leaves at most three items for the morning, each with its source, plus a one-page diary.
-- **Assistants and models.** One page per assistant: when it wakes, what it reads each turn, which model it uses. A project's model strategy can be one sentence.
-- **Read-only sources.** Feishu messages (read-only) and folders on your Mac you allow. Both can be switched off at any time.
+![The board of things waiting on you](docs/site/assets/board.webp)
 
-## Quick start
+## How it differs from other agent tools
 
-Needs DSH 0.2.x with the web profile, and Node 24 or later.
+- **You see tasks, not agents.** No naming agents, no configuring skills, no room full of chats to watch. Every task has an executor behind it, but what you manage is the work.
+- **Your words travel with the task.** Each task carries what you actually said. Anything it remembers about you links back to the sentence you said it in.
+- **You do not have to watch.** It comes to you in three cases only: a decision is yours, a delivery waits for your acceptance, or it is stuck.
+
+## Install
+
+You need DeepSeek Harness (tested on 0.2.1) and Node 24 or later. If you do not have DeepSeek Harness yet: `npm install -g @deepseek-ai/dsh`.
 
 ```sh
 git clone https://github.com/DKKD13/tacit-dsh
-cd tacit-dsh/plugin && npm test          # 484 unit tests
-dsh plugin --profile web add "$(pwd)"
-dsh --profile web
+cd tacit-dsh/plugin
+npm test                                 # 484 unit tests, optional
+dsh plugin --profile web add "$(pwd)"    # add the plugin to DeepSeek Harness
+dsh --profile web                        # start it and open the address it prints
 ```
 
-After it opens, the sidebar shows 个人助理 (personal assistant) and 项目 (projects). The interface is in Chinese for now. Models follow your DSH settings.
+The sidebar now shows 个人助理 (personal assistant) and 项目 (projects). Create a project and state your first goal in its conversation. Models follow your DeepSeek Harness settings. The interface is in Chinese for now.
 
-A step-by-step guide (Chinese): [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
+A step-by-step guide (in Chinese, about ten minutes): [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
+
+## What is in it
+
+- **One board of things waiting on you.** Three lanes: waiting on you, running, done today. Click a task card to open the task; click a message card and a reply is drafted in the input box.
+- **Task page.** The brief with your own words, what counts as done, files read, progress by time. Take a task over yourself, then hand it back.
+- **Swappable executors.** Tasks run on DeepSeek Harness by default. If Claude Code is on the machine, hand a task to it. Codex can be chosen too, but a full task run on Codex has not been verified yet.
+- **Memory with a source.** "About you" keeps only what you said yourself, each line with the original quote. You can edit or forget any of it.
+- **A night pass.** On nights when the computer is idle, the personal assistant goes over the day and leaves at most three items for the morning, each with its source.
+- **Read-only sources.** Feishu messages and the Mac folders you allow. Both are read-only and can be switched off at any time.
+
+Where each feature was learned from and which tests back it: [`docs/FEATURES.md`](docs/FEATURES.md) (Chinese).
 
 ## How it works
 
-- Every assistant is an ordinary DSH session: one project assistant per project, one executor per task. You can open any of them and read the full trace.
-- A wake carries only “how many unread, from where”. The agent reads its own inbox and confirms when the turn ends, so a lost wake never loses a message. We learned this from Raft.
+- Every assistant is an ordinary DeepSeek Harness session. You can open any of them and read what it did.
 - All state is one event log. The board, the task page and memory are computed from it.
-- Code only validates: does the quoted line exist in that message, does the number come from the material. Meaning and wording stay with the model.
+- Waking an assistant tells it only "how many new messages, from where". It reads the content itself, so a lost wake never loses a message.
+- Code only checks: is the quoted line really in that message, does the number come from the material. Meaning and wording stay with the model.
 
-## Limits
+## Where it stands
 
-- It never decides, accepts or sends messages on your behalf.
-- Feishu is read-only. Mac folders are read-only, and only the ones you allow.
-- It runs only inside DeepSeek Harness.
-- Model keys stay on the machine that runs it and never enter the repository.
+- Version 1.0, MIT license. 484 automated tests, run on Linux and macOS.
+- It runs only inside DeepSeek Harness. The interface is in Chinese for now. Feishu is read-only.
+- Claude Code as an executor has been run for real. For Codex, switching and start-up were tried, but a full task run on its own model has not been verified yet.
+- Claude Code and Codex run without permission prompts or a sandbox: they can read and write whatever your OS user can.
+- It never decides, accepts or sends messages on your behalf. Model keys stay on the machine that runs it.
+
+Every test finding, and what was not verified: [`docs/TESTING.md`](docs/TESTING.md) (Chinese).
 
 ## More
 
-- Features and what backs each one: [`docs/FEATURES.md`](docs/FEATURES.md)
+- Getting started: [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md)
+- Features: [`docs/FEATURES.md`](docs/FEATURES.md)
 - Test report: [`docs/TESTING.md`](docs/TESTING.md)
 - How we benchmarked against Manus, Genspark and Raft: [`docs/launch/benchmark.md`](docs/launch/benchmark.md)
 
