@@ -208,7 +208,7 @@ def page(lang, title, dek, body, toc, rel, sub, kicker="", desc=""):
     zh_href, en_href = here(rel + sub), rel + "en/" + sub
     url = SITE + ("en/" if lang == "en" else "") + sub
     share = "".join(f'<meta property="og:{k}" content="{html.escape(v, quote=True)}">\n' for k, v in (("type", "article"), ("site_name", "DS-buddy"), ("title", title), ("description", desc), ("url", url)))
-    if lang == "zh": share += f'<meta property="og:image" content="{SITE}img/rd-hero.jpg">\n<meta name="twitter:card" content="summary_large_image">\n'   # the picture carries Chinese text
+    if lang == "zh": share += f'<meta property="og:image" content="{SITE}img/rd2-hero.jpg">\n<meta name="twitter:card" content="summary_large_image">\n'   # the picture carries Chinese text
     else: share += '<meta name="twitter:card" content="summary">\n'
     ON = ' class="on"'
     nav = "".join("<a" + (ON if sub == s2 else "") + ' href="' + here(base + s2) + '">' + label + "</a>" for s2, label in (("", u["post"]), ("deep/", u["deep"]), ("guide/", u["guide"])))
@@ -351,7 +351,7 @@ PAGES = [("zh", "zh.md", "", "", ""), ("zh", "zh-deep.md", "deep/", "../", "deep
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
     (OUT / "img").mkdir(parents=True)
-    used = {"rd-hero.jpg"}   # the share image of the Chinese pages
+    used = {"rd2-hero.jpg"}   # the share image of the Chinese pages
     for src in (ROOT / "content").glob("*.md"): used |= set(re.findall(r"img/([\w.-]+\.jpg)", src.read_text(encoding="utf-8")))
     for name in sorted(used): shutil.copy2(ROOT / "img" / name, OUT / "img" / name)   # only the images the pages use
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
