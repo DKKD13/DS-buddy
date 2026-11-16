@@ -243,7 +243,7 @@ Files on your computer go another way: a small program on your computer connects
 
 | Product | How it collects | What the collection is for |
 | --- | --- | --- |
-| [Screenpipe](https://screenpi.pe/) | Records screen and audio continuously, on your machine | A searchable history that other AI tools can query over MCP |
+| [Screenpipe](https://screenpipe.com/) | Records screen and audio continuously, on your machine | A searchable history that other AI tools can query over MCP |
 | [AirJelly](https://www.airjelly.ai/) | Reads the active window of the apps you allow | Rewind and chat, and Codex or Claude Code can recall this context |
 | [Littlebird](https://littlebird.ai/) | Reads the text of the active window through accessibility without recording the screen, and transcribes meetings | A memory for its own assistant to use |
 | Computer History in Codex | Logs clicks, typing and app switches through accessibility, takes no screenshots, off by default | Local memory files for ChatGPT and Codex |
@@ -252,7 +252,7 @@ This table follows each product's public material and press coverage. For readin
 
 From what I have seen, they mostly stop at remembering and being searchable: the context is stored, and a person or an agent fetches it when needed. Proposing a piece of work from the context it has seen, splitting it, getting it done and bringing it back to you for the call: that loop is still left for the person to close.
 
-It is the loop DS-buddy wants to close. The timeline goes into the context layer, where the personal assistant can read it at any time and every entry can be checked against its source. When it hands a job to a project, what goes across is your own words and the related material. Messages someone is waiting for you to answer are noted in Waiting on you. At night it reviews the day and leaves up to three cards for the morning. When work is finished, it comes back to that same board.
+It is the loop DS-buddy wants to close. The timeline goes into the context layer, where the personal assistant can read it at any time and every entry can be checked against its source. When it hands a job to a project, what goes across is your own words and the related material. Messages someone is waiting for you to answer are listed in Waiting on you automatically. At night it reviews the day and leaves up to three cards for the morning. When work is finished, it comes back to that same board.
 
 ## You only make the calls
 
