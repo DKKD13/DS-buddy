@@ -3119,7 +3119,7 @@ window.__ModuleLoader__.load({
 		/** What a reminder's chip says and fills in, by where it came from. Pure. */
 		function noteAsks(note) {
 			if (note.from === "followup") return [["帮我回", `${note.who}在${note.app}「${note.where}」找我，原话「${note.text}」。帮我起草一条回复，先给我看，别直接发。`]];
-			if (note.from === "card") return [["接着说", `「${note.title}」${note.text ? `：${sentence(note.text)}` : "。"}帮我推进这件事：先说你的建议，需要我拍板的列出选项。`]];
+			if (note.from === "card") return [["接着说", note.card && typeof note.card.ask === "string" && note.card.ask.trim() ? note.card.ask.trim() : `「${note.title}」${note.text ? `：${sentence(note.text)}` : "。"}帮我推进这件事：先说你的建议，需要我拍板的列出选项。`]];
 			const label = note.lane === "do" ? "开个任务" : note.lane === "read" ? "带我看看" : "聊聊";
 			return [[label, note.ask]];
 		}
@@ -3128,17 +3128,22 @@ window.__ModuleLoader__.load({
 		 * one line, the detail, and what you might say back. Newest first. Pure.
 		 */
 		function inboxNotes({ followups, cards, dream, projectName }) {
+			// kind: "message" is news from outside (a Feishu message, what the computer shows); "suggest" is the assistant's own idea.
+			const who = f => !f.ask ? `${f.who}在「${f.title}」找你` : f.who && !f.ask.includes(f.who) ? `${f.who}：${f.ask}` : f.ask;
 			const notes = [
-				...(followups || []).map(f => ({ key: "f" + f.conversation, from: "followup", app: f.app || "飞书", place: `${f.app || "飞书"}　${f.title}`, who: f.who, where: f.title, title: f.ask || `${f.who}在「${f.title}」找你`, text: f.text, at: f.since, f })),
+				...(followups || []).map(f => ({ key: "f" + f.conversation, from: "followup", kind: "message", rank: 0, app: f.app || "飞书", place: `${f.app || "飞书"}　${f.title}`, who: f.who, where: f.title, title: who(f), text: f.text, at: f.since, f })),
 				...(cards || []).filter(c => c.state === "open").map(c => {
 					// The icon is where the matter came from (the event the card cites); the foot is its project when it has one.
-					const src = c.source || null, project = c.target && c.target.projectName;
-					return { key: "c" + c.id, from: "card", app: src ? src.app : "个人助理", place: project || (src ? [src.app === "电脑" ? "" : src.app, src.where].filter(Boolean).join("　") : "个人助理"), who: "个人助理", title: c.title, text: c.body || "", at: c.at, card: c };
+					const src = c.source || null, project = c.target && c.target.projectName, idea = c.via === "next-steps" || !src;
+					return { key: "c" + c.id, from: "card", kind: idea ? "suggest" : "message", rank: 1, app: src ? src.app : "个人助理", place: project || (src ? [src.app === "电脑" ? "" : src.app, src.where].filter(Boolean).join("　") : "个人助理"), who: "个人助理", title: c.title, text: c.body || "", at: c.at, card: c };
 				}),
-				...(dream ? dream.picked.filter(p => !p.reaction).map(p => ({ key: "p" + p.lane, from: "pick", app: "个人助理", place: projectName(p.projectId) || "个人助理", who: "个人助理", lane: p.lane, title: p.title, text: p.body || "", at: dream.startedAt, ask: pickAsk(p, projectName(p.projectId)), pick: p })) : []),
+				...(dream ? dream.picked.filter(p => !p.reaction).map(p => ({ key: "p" + p.lane, from: "pick", kind: "suggest", rank: 1, app: "个人助理", place: projectName(p.projectId) || "个人助理", who: "个人助理", lane: p.lane, title: p.title, text: p.body || "", at: dream.startedAt, ask: pickAsk(p, projectName(p.projectId)), pick: p })) : []),
 			];
-			return notes.sort((a, b) => (b.at || 0) - (a.at || 0));
+			// Someone waiting on a reply is what slips by most easily: first; the rest newest first.
+			return notes.sort((a, b) => a.rank - b.rank || (b.at || 0) - (a.at || 0));
 		}
+		/** What a task card says it needs from you, in one word before its name. */
+		const TASK_VERB = { review: "验收", decision: "拍板", failed: "没做成", working: "在做", done: "做完了" };
 		/**
 		 * 待你决定 as a board read like an inbox: lanes by what each item needs from you (等你, 进行中, 今天完成), one card per
 		 * item, newest first. No buttons on the cards: a task opens on click; a message or a note puts a reply to start from
@@ -3155,51 +3160,54 @@ window.__ModuleLoader__.load({
 			const skills = (today.dream && today.dream.skills) || [], anySkill = skills.some(s => s.proposal || s.trial);
 			const run = async work => { setError(null); try { await work(); } catch (e) { setError(String(e?.message || e)); } };
 			const react = (p, reaction) => run(() => act("dreamReact", { day: say.dream.day, lane: p.lane, reaction }));
-			const place = text => h("span", { className: "mp4-ell" }, text);
-			// Where a note came from: the app's own mark (飞书), the computer, or the assistant's neutral ring.
-			const sourceIcon = app => app === "电脑" ? h("span", { className: "mp4-kb-glyph" }, h(Icon, { name: "monitor", size: 16 })) : app && app !== "个人助理" ? h(AppIcon, { name: app, size: 16 }) : h(StatusIcon, { status: "note" });
-			const card = ({ key, at, icon, iconTip, title, body, foot, when, open, dismiss, quiet, tip }) => ({ at, el: h("div", {
+			// Where a note came from: the app's own mark (飞书), the computer, or a bulb for the assistant's own idea.
+			const sourceIcon = n => n.kind === "suggest" ? h(ProjectGlyph, { name: "lightbulb", color: "purple", size: 16 })
+				: n.app === "电脑" ? h("span", { className: "mp4-kb-glyph" }, h(Icon, { name: "monitor", size: 16 })) : n.app && n.app !== "个人助理" ? h(AppIcon, { name: n.app, size: 16 }) : h(ProjectGlyph, { name: "lightbulb", color: "purple", size: 16 });
+			const card = ({ key, icon, iconTip, title, body, when, open, dismiss, quiet, tip }) => h("div", {
 				key, className: "mp4-kb-card" + (quiet ? " mp4-kb-quiet" : ""), role: "button", tabIndex: 0, title: tip,
 				onClick: e => open(e.currentTarget), onKeyDown: e => { if (e.key === "Enter" && e.target === e.currentTarget) open(e.currentTarget); },
 			},
-				h("span", { className: "mp4-kb-top" }, h("span", { className: "mp4-kb-icon", title: iconTip }, icon), h("span", { className: "mp4-kb-title", title: typeof title === "string" ? title : undefined }, title), when ? h("span", { className: "mp4-kb-when" }, when) : null),
-				body ? h("span", { className: "mp4-kb-body", title: typeof body === "string" ? body : undefined }, body) : null,
-				foot ? h("span", { className: "mp4-kb-foot" }, foot) : null,
-				dismiss ? h("button", { type: "button", className: "mp4-kb-x", title: dismiss[0], "aria-label": dismiss[0], onClick: e => { e.stopPropagation(); dismiss[1](); } }, h(Icon, { name: "close", size: 12 })) : null) });
-			// A task's context is its project: the project's own mark on the left, the project and the task's status in the foot.
-			const task = (p, t, status, extra) => card({ key: t.key || t.id, at: t.since || t.updatedAt, icon: known(p.id) ? h(ProjectMark, { p: known(p.id), size: 16, plain: true }) : h(StatusIcon, { status }), iconTip: p.name, title: t.title,
-				foot: place(`${p.name}　${STATUS_LOOK[status]?.[0] || ""}`.trim()), when: ago(t.since || t.updatedAt), open: () => openTaskBy(p.id, t.threadId || t.id), tip: `打开「${t.title}」`, ...extra });
+				h("span", { className: "mp4-kb-top" }, h("span", { className: "mp4-kb-icon", title: iconTip }, icon), h("span", { className: "mp4-kb-title" }, title), when ? h("span", { className: "mp4-kb-when" }, when) : null),
+				body ? h("span", { className: "mp4-kb-body" }, body) : null,
+				dismiss ? h("button", { type: "button", className: "mp4-kb-x", title: dismiss[0], "aria-label": dismiss[0], onClick: e => { e.stopPropagation(); dismiss[1](); } }, h(Icon, { name: "close", size: 12 })) : null);
+			// A task says in its first word what it needs (验收, 拍板, 没做成, 在做); its colour says the same at a glance.
+			const task = (p, t, status, body) => card({ key: t.key || t.id, icon: h(StatusIcon, { status }), iconTip: STATUS_LOOK[status]?.[0], title: `${TASK_VERB[status]}：${t.title}`,
+				body: body || null, when: ago(t.since || t.updatedAt), open: () => openTaskBy(p.id, t.threadId || t.id), quiet: status === "working" || status === "done", tip: `打开「${t.title}」` });
 			const waitStatus = x => x.kind === "decision" ? "decision" : x.kind === "failed" ? "failed" : "review";
+			const oldest = list => [...list].sort((a, b) => (a.since || 0) - (b.since || 0));
+			const groups = projects.map(p => ({ p, cards: [
+				...oldest(p.waits).map(x => task(p, x, waitStatus(x), x.kind === "decision" ? x.ask : x.summary)),
+				...p.working.map(t => task(p, t, "working", t.summary)),
+				...(showDone ? p.done.map(t => task(p, t, "done", t.summary)) : []),
+			] })).filter(g => g.cards.length);
 			const note = n => {
 				const reply = noteAsks(n)[0][1];
 				const dismiss = n.from === "followup" ? ["不用回", () => run(() => act("followupDismiss", { conversation: n.f.conversation, through: n.f.through }))]
 					: n.from === "card" ? ["不用了", () => run(() => act("cardAction", { projectId: "hub", cardId: n.card.id, actionId: "dismiss" }))]
 					: ["不感兴趣", () => react(n.pick, "not_interested")];
 				const after = n.from === "pick" ? () => react(n.pick, n.lane === "do" ? "started" : n.lane === "read" ? "opened" : "noted") : null;
-				// The same ring family as the task cards; where it came from (个人助理, 飞书) is in the tooltip and the foot.
-				return card({ key: n.key, at: n.at, icon: sourceIcon(n.app), iconTip: n.app, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
-					foot: place(n.place), when: n.at ? ago(n.at) : "", dismiss, tip: `填进输入框：${reply}`,
-					open: from => { draft(from, reply); if (after) after(); } });
+				return card({ key: n.key, icon: sourceIcon(n), iconTip: n.kind === "suggest" ? "个人助理的建议" : n.place, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
+					when: n.at ? ago(n.at) : "", dismiss, tip: `填进输入框：${reply}`, open: from => { draft(from, reply); if (after) after(); } });
 			};
-			const byTime = list => list.sort((a, b) => (b.at || 0) - (a.at || 0)).map(x => x.el);
-			const lanes = [
-				["wait", "等你", byTime([...projects.flatMap(p => p.waits.map(x => task(p, x, waitStatus(x), { body: x.kind === "decision" ? x.ask : x.summary }))), ...notes.map(note)])],
-				["run", "进行中", byTime(projects.flatMap(p => p.working.map(t => task(p, t, "working", { body: t.summary || null }))))],
-				["done", "今天完成", showDone ? byTime(projects.flatMap(p => p.done.map(t => task(p, t, "done", { quiet: true, body: t.summary || null })))) : []],
-			].filter(([, , cards]) => cards.length);
-			// 待你决定 is what waits on you: finished work stays out of sight until asked for.
+			// 待你决定 is what needs you: finished work stays out of sight until asked for.
 			const doneCount = projects.reduce((n, p) => n + p.done.length, 0);
 			const doneTool = doneCount ? h("button", { type: "button", className: "mp4-kb-tool" + (showDone ? " mp4-kb-tool-on" : ""), title: showDone ? "收起今天完成" : `今天完成 ${doneCount} 件`, "aria-label": showDone ? "收起今天完成" : `今天完成 ${doneCount} 件`, "aria-pressed": showDone, onClick: () => setShowDone(v => !v) }, h(Icon, { name: "check", size: 14 })) : null;
 			const diary = say ? h("button", { type: "button", className: "mp4-kb-tool", title: "昨晚的日记", "aria-label": "昨晚的日记", onClick: () => window.open("api/mira-projects/dream/diary?day=" + encodeURIComponent(say.dream.day), "_blank", "noopener") }, h(Icon, { name: "moon", size: 14 })) : null;
-			if (!lanes.length && !anySkill) return h("p", { className: "mp4-ib-empty" }, "没有等你的事。", doneTool);
+			const more = (id, list, cap) => list.length > cap || whole[id] && list.length > cap ? h("button", { type: "button", className: "mp4-kb-more", onClick: () => setWhole(s => ({ ...s, [id]: !s[id] })) }, whole[id] ? "收起" : `还有 ${list.length - cap} 件`) : null;
+			const head = (label, tools) => h("h3", { className: "mp4-kb-head" }, label, tools.some(Boolean) ? h("span", { className: "mp4-kb-tools" }, tools) : null);
+			const news = notes.map(note), shownNews = whole.news ? news : news.slice(0, 8);
+			const shownGroups = whole.progress ? groups : groups.slice(0, 4);
+			const blocks = [
+				groups.length || doneCount ? h("section", { key: "progress", className: "mp4-kb-lane mp4-kb-lane-progress" }, head("项目进展", [doneTool]),
+					groups.length ? h("div", { className: "mp4-kb-cards" }, shownGroups.map(({ p, cards }) => h("div", { key: p.id, className: "mp4-kb-group" },
+						h("button", { type: "button", className: "mp4-kb-proj", title: `打开项目「${p.name}」`, onClick: () => navigateProject(p.id) }, known(p.id) ? h(ProjectMark, { p: known(p.id), size: 14, plain: true }) : null, h("span", { className: "mp4-ell" }, p.name)),
+						cards)), more("progress", groups, 4)) : h("p", { className: "mp4-kb-none" }, "项目里没有要你处理的事。")) : null,
+				news.length || diary ? h("section", { key: "news", className: "mp4-kb-lane mp4-kb-lane-news" }, head("新消息与建议", [diary]),
+					news.length ? h("div", { className: "mp4-kb-cards" }, shownNews, more("news", news, 8)) : h("p", { className: "mp4-kb-none" }, "没有新消息。")) : null,
+			].filter(Boolean);
+			if (!blocks.length && !anySkill) return h("p", { className: "mp4-ib-empty" }, "现在没有要你处理的事。");
 			return h(React.Fragment, null,
-				h("div", { className: "mp4-kb" }, lanes.map(([id, label, cards]) => {
-					const shown = whole[id] ? cards : cards.slice(0, 8);
-					return h("section", { key: id, className: "mp4-kb-lane mp4-kb-lane-" + id },
-						h("h3", { className: "mp4-kb-head" }, label, h("span", { className: "mp4-kb-n" }, cards.length), id === lanes[0][0] ? h("span", { className: "mp4-kb-tools" }, id === "wait" ? diary : null, doneTool) : null),
-						h("div", { className: "mp4-kb-cards" }, shown,
-							cards.length > shown.length || whole[id] && cards.length > 8 ? h("button", { type: "button", className: "mp4-kb-more", onClick: () => setWhole(s => ({ ...s, [id]: !s[id] })) }, whole[id] ? "收起" : `还有 ${cards.length - shown.length} 件`) : null));
-				})),
+				h("div", { className: "mp4-kb" }, blocks),
 				h(SkillRows, { skills }),
 				error ? h("p", { className: "mp4-err" }, error) : null);
 		}
@@ -5239,7 +5247,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-row.mp4-row-line{display:flex;align-items:center;gap:8px;min-height:32px;padding:6px 8px;border-radius:6px}.mp4-row-line .mp4-row-title{flex:1;min-width:0;font-size:13px;line-height:20px;font-weight:400;color:var(--mp4-fg)}.mp4-row-line .mp4-time{flex:none;font-size:12px;line-height:18px}.mp4-row-line.mp4-row-on{background:var(--rx-gray-3)}
 .mp-retention-dialog .mp-handoff-form>label{margin:0;padding:12px 16px;border:.5px solid var(--rx-gray-6);background:var(--rx-gray-1)}.mp-retention-dialog .mp-handoff-form>label+label{margin-top:-16px;border-top-width:0}.mp-retention-dialog .mp-handoff-form>label:first-of-type{border-radius:12px 12px 0 0}.mp-retention-dialog .mp-handoff-form>label:last-of-type{border-radius:0 0 12px 12px}.mp-retention-dialog .mp-handoff-form>label:first-of-type:last-of-type{border-radius:12px}
 .mp4-seg{flex:none;display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--rx-gray-3)}.mp4-seg>button{all:unset;cursor:pointer;padding:3px 10px;border-radius:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3)}.mp4-seg>button.mp4-seg-on{background:var(--rx-gray-1,#fff);color:var(--mp4-fg);font-weight:500;box-shadow:0 0 0 .5px var(--rx-gray-6)}.mp4-seg>button:disabled{opacity:.45;cursor:default}.mp4-seg>button:focus-visible{outline:2px solid var(--rx-blue-9);outline-offset:1px}
-.mp4-kb{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));gap:12px;align-items:start}
+.mp4-kb{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start}
 .mp4-kb-lane{min-width:0;display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:12px;background:var(--rx-gray-2)}
 .mp4-kb-head{margin:0;padding:2px 6px;display:flex;align-items:center;gap:6px;font-size:13px;line-height:20px;font-weight:600;color:var(--mp4-fg)}.mp4-kb-n{font-weight:400;color:var(--mp4-fg3);font-variant-numeric:tabular-nums}
 .mp4-kb-tool{all:unset;box-sizing:border-box;cursor:pointer;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;color:var(--mp4-fg3);transition:background 250ms ease-out,color 250ms ease-out}.mp4-kb-tool:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}
@@ -5254,7 +5262,10 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-kb-body{padding-left:24px;font-size:13px;line-height:20px;color:var(--mp4-fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mp4-kb-foot{margin-top:auto;padding-left:24px;min-width:0;display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3);overflow:hidden;white-space:nowrap}
 .mp4-kb-where{display:inline-flex;align-items:center;gap:4px;min-width:0}
-.mp4-kb-card{min-height:82px}
+.mp4-kb-card{min-height:62px}
+.mp4-kb-group{display:flex;flex-direction:column;gap:6px}.mp4-kb-group+.mp4-kb-group{margin-top:6px}
+.mp4-kb-proj{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0;padding:0 6px;height:20px;font-size:12px;line-height:20px;color:var(--mp4-fg2);border-radius:6px}.mp4-kb-proj:hover{color:var(--mp4-fg)}.mp4-kb-proj:focus-visible{outline:2px solid var(--rx-blue-9);outline-offset:-2px}
+.mp4-kb-none{margin:0;padding:2px 6px 4px;font-size:12px;line-height:20px;color:var(--mp4-fg3)}
 .mp4-kb-tools{margin-left:auto;display:inline-flex;align-items:center;gap:2px}
 .mp4-kb-tools .mp4-kb-tool{margin-left:0}
 .mp4-kb-tool-on{background:var(--rx-gray-4);color:var(--mp4-fg)}

@@ -27,6 +27,7 @@ import { AutoMemory } from './auto-memory.js'
 import { ProjectIcons } from './project-icons.js'
 import { AssistantLook } from './assistant-look.js'
 import { Dream } from './dream.js'
+import { NextSteps, NEXT_STEPS_EVERY_MINUTES } from './next-steps.js'
 import { createHubTools, visibleToHub } from './hub-tools.js'
 import { GitLabWorkflow } from './gitlab.js'
 import { ProjectAutomations } from './automations.js'
@@ -147,6 +148,9 @@ export function apply(ctx, config = {}) {
     hub.look = new AssistantLook({ hubStore, complete: sideCall('mira-assistant-look') })
     // 做梦: one quiet session a night while the owner sleeps; it only reads and writes its own diary.
     hub.dream = new Dream({ hubStore, projects: store, look: hub.look, logger: ctx.logger, complete: sideCall('mira-dream', 8000) })
+    // 巡看: in the day, about every half hour when something changed, one quiet look over everything; suggestions only.
+    hub.nextSteps = new NextSteps({ hubStore, projects: store, logger: ctx.logger, complete: sideCall('mira-next-steps', 4000), muted: () => hub.dream.muted(),
+      everyMs: Number(config.nextStepsMinutes ?? NEXT_STEPS_EVERY_MINUTES) * 60_000 })
     hub.attention = new FeishuAttention({ hubStore, request: reason => hubActions.request(reason) })
     hub.feishuLive = new FeishuLive({ executable: config.feishuCliExecutable })
     ctx.effect(() => () => hub.feishuLive.stop(), 'mira-projects: feishu live')
@@ -154,7 +158,7 @@ export function apply(ctx, config = {}) {
     ctx.effect(() => () => hub.personal.close(), 'mira-projects: personal search index')
     ctx.effect(() => () => retention.close(), 'mira-projects: source retention')
     ctx.effect(() => {
-      const timer = setInterval(() => { try { retention.collect() } catch (error) { ctx.logger.warn('原文保留清理未完成', error) };hub.observations.summarize().catch(error => ctx.logger.warn('观察窗口摘要失败', error));hub.observations.retryImportant().catch(error => ctx.logger.warn('观察重要信号重试失败', error));hub.observations.maintenance.collect().catch(error => ctx.logger.warn('观察图片GC失败', error));hub.history.tick().catch(error => ctx.logger.warn('电脑历史整理失败', error));hub.followups.tick().then(() => hub.attention.tick()).catch(error => ctx.logger.warn('待回复检查失败', error));hub.autoMemory.tick().catch(error => ctx.logger.warn('记忆提炼失败', error));hub.projectIcons.tick().catch(error => ctx.logger.warn('项目图标没选出来', error));hub.dream.tick() }, 60_000)
+      const timer = setInterval(() => { try { retention.collect() } catch (error) { ctx.logger.warn('原文保留清理未完成', error) };hub.observations.summarize().catch(error => ctx.logger.warn('观察窗口摘要失败', error));hub.observations.retryImportant().catch(error => ctx.logger.warn('观察重要信号重试失败', error));hub.observations.maintenance.collect().catch(error => ctx.logger.warn('观察图片GC失败', error));hub.history.tick().catch(error => ctx.logger.warn('电脑历史整理失败', error));hub.followups.tick().then(() => hub.attention.tick()).catch(error => ctx.logger.warn('待回复检查失败', error));hub.autoMemory.tick().catch(error => ctx.logger.warn('记忆提炼失败', error));hub.projectIcons.tick().catch(error => ctx.logger.warn('项目图标没选出来', error));hub.dream.tick();hub.nextSteps.tick() }, 60_000)
       timer.unref()
       return () => { clearInterval(timer);hub.observations.close() }
     }, 'mira-projects: observation maintenance')

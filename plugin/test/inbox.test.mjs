@@ -49,12 +49,23 @@ test('需要留意 is one stream, newest first: Feishu, the assistant\'s open no
     dream: { startedAt: 10, picked: [{ lane: 'do', title: '补数据', body: '四步', projectId: 'p1' }, { lane: 'read', title: '看说明', reaction: 'opened' }] },
     projectName: id => id === 'p1' ? '画像' : '',
   })
-  same(notes.map(n => [n.from, n.title]), [['followup', '问坏图修好没'], ['card', '20 文件待提交'], ['pick', '补数据']])
+  same(notes.map(n => [n.from, n.title]), [['followup', '陈工：问坏图修好没'], ['card', '20 文件待提交'], ['pick', '补数据']], 'a Feishu title names who asks')
+  same(notes.map(n => n.kind), ['message', 'message', 'suggest'], 'news from outside apart from the assistant\'s own ideas')
   same(client.noteAsks(notes[0]), [['帮我回', '陈工在飞书「发布群」找我，原话「那张图修了吗」。帮我起草一条回复，先给我看，别直接发。']])
   same(client.noteAsks(notes[1]), [['接着说', '「20 文件待提交」：只差提交。帮我推进这件事：先说你的建议，需要我拍板的列出选项。']])
   same(notes.map(n => [n.app, n.place]), [['飞书', '飞书　发布群'], ['电脑', '我的 Mac'], ['个人助理', '画像']], 'each note shows where it came from')
   same(client.noteAsks(notes[2]), [['开个任务', '在「画像」开个任务：补数据']])
   same(client.inboxNotes({}), [])
+})
+
+test('a look-over suggestion is the assistant\'s own idea and puts its whole request in the composer; someone waiting comes first', () => {
+  const ask = '把补数据推进到能放进报告：先看进度，再列出还差的几天；交付一段说明；要改范围先问我。'
+  const notes = client.inboxNotes({
+    followups: [{ conversation: 'oc_1', who: '周工', title: '单聊', ask: '周工在等你回复', text: '看结果了吗', since: 5 }],
+    cards: [{ id: 'c_9', state: 'open', title: '补数据还差一半', body: '明天要给李雷看', ask, via: 'next-steps', at: 50, source: { app: '飞书', where: '单聊' } }],
+  })
+  same(notes.map(n => [n.from, n.kind, n.title]), [['followup', 'message', '周工在等你回复'], ['card', 'suggest', '补数据还差一半']], 'the waiting person first, though older; no name said twice')
+  same(client.noteAsks(notes[1]), [['接着说', ask]])
 })
 
 test('the @ menu does not offer a conversation that has no title, and passes every other row through', () => {

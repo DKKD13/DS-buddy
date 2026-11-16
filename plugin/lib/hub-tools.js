@@ -184,7 +184,7 @@ export function createHubTools({ defineTool, hubStore, hubDriver, hubActions, pr
 
   add({
     name: 'hub_card_propose',
-    description: '在用户的今日看板和悬浮窗上放一张总管卡。一张卡只说一件事，标题 12 字以内，正文 60 字以内。同一件事已有卡会被替换。每天最多 5 张。',
+    description: '在用户的今日看板和悬浮窗上放一张总管卡。一张卡只说一件事。标题是一句他只看标题就明白的话：谁、发生了什么、要他做什么，写具体的人、文件、项目名，不写「待处理」「待提交」这类状态词，24 字以内；正文 60 字以内，说为什么是现在。同一件事已有卡会被替换。每天最多 5 张。',
     parameters: {
       kind: { type: 'string', enum: HUB_CARD_KINDS, required: true },
       title: { type: 'string', required: true },

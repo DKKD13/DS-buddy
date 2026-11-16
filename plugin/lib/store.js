@@ -726,6 +726,8 @@ export class ProjectStore {
           confidence: event.confidence ?? null, at: event.at, state: 'open', actedWith: null, closedAt: null, closedNote: null,
           // Hub cards point into a project and carry cross-project evidence refs ("p_x#12").
           ...(event.target !== undefined ? { target: event.target, refs: event.refs ?? [], level: event.level ?? 'board' } : {}),
+          // 巡看 (next-steps.js) leaves the whole request the owner can send with one click, and marks the card as its own.
+          ...(typeof event.ask === 'string' ? { ask: event.ask } : {}), ...(typeof event.via === 'string' ? { via: event.via } : {}),
         })
         project.cardOrder.push(event.cardId)
         break
