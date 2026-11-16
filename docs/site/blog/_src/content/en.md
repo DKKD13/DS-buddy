@@ -79,6 +79,6 @@ Agents will keep getting stronger and cheaper. What stays and accumulates is con
 
 If you think using AI means running an AI team, Tacit will surprise you a little. There is no team to run here.
 
-Say one sentence. It gets it.
+Say the goal. Make the calls.
 
 Tacit is an open-source plugin for DeepSeek Harness. The code is at [github.com/DKKD13/tacit-dsh](https://github.com/DKKD13/tacit-dsh). The source-level teardown of how products pass context is in [another post](deep/). The images come from the demo film: the interface is real, the data is demo data, and the one marked as an illustration is drawn.

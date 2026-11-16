@@ -79,6 +79,6 @@ agent 会越来越强，也越来越便宜。留下来、越积越多的是上�
 
 如果你觉得用 AI 就是带一支 AI 团队，Tacit 会让你有点意外。这里没有团队要带。
 
-交代一句，心领神会。
+只说目标，只管拍板。
 
 Tacit 是 DeepSeek Harness 的一个开源插件，代码在 [github.com/DKKD13/tacit-dsh](https://github.com/DKKD13/tacit-dsh)。各家怎么传上下文的源码级拆解，在[另一篇](deep/)里。文中配图取自演示片：界面是真实的，数据是演示用的，标了「示意动画」的那张是画的。
