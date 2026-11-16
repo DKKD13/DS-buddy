@@ -14,7 +14,8 @@ test('a dream pick offers the night\'s own sentence when it wrote one, else one 
   assert.equal(client.pickAsk({ lane: 'do', title: '补数据' }, '用户访谈整理'), '在「用户访谈整理」开个任务：补数据')
   assert.equal(client.pickAsk({ lane: 'do', title: '补数据' }, ''), '开个任务：补数据')
   assert.equal(client.pickAsk({ lane: 'read', title: '新闻稿' }, 'x'), '带我看看「新闻稿」，说说要点')
-  assert.equal(client.pickAsk({ lane: 'care', title: '睡得少' }, 'x'), '关于「睡得少」，')
+  assert.equal(client.pickAsk({ lane: 'care', title: '睡得少' }, 'x'), '关于「睡得少」，说说你的看法和建议。')
+  assert.equal(client.pickAsk({ lane: 'care', title: '睡得少', body: '连着三晚一点后才停' }, 'x'), '关于「睡得少」：连着三晚一点后才停。说说你的看法和建议。', 'a whole request, never half a sentence')
 })
 
 test('项目进展 lists projects holding asks first, keeps each task once, and leaves out projects with nothing to show', () => {
@@ -44,13 +45,14 @@ test('an outside runner\'s tool calls fold into one line per stretch, so the pro
 test('需要留意 is one stream, newest first: Feishu, the assistant\'s open notes and last night\'s picks not yet handled', () => {
   const notes = client.inboxNotes({
     followups: [{ conversation: 'oc_1', who: '陈工', title: '发布群', ask: '问坏图修好没', text: '那张图修了吗', since: 30 }],
-    cards: [{ id: 'c_1', state: 'open', title: '20 文件待提交', body: '只差提交', at: 20 }, { id: 'c_2', state: 'dismissed', title: '关掉的', at: 40 }],
+    cards: [{ id: 'c_1', state: 'open', title: '20 文件待提交', body: '只差提交', at: 20, source: { app: '电脑', where: '我的 Mac' } }, { id: 'c_2', state: 'dismissed', title: '关掉的', at: 40 }],
     dream: { startedAt: 10, picked: [{ lane: 'do', title: '补数据', body: '四步', projectId: 'p1' }, { lane: 'read', title: '看说明', reaction: 'opened' }] },
     projectName: id => id === 'p1' ? '画像' : '',
   })
   same(notes.map(n => [n.from, n.title]), [['followup', '问坏图修好没'], ['card', '20 文件待提交'], ['pick', '补数据']])
-  same(client.noteAsks(notes[0]), [['帮我回', '陈工在「发布群」找我，原话「那张图修了吗」，帮我看看怎么回']])
-  same(client.noteAsks(notes[1]), [['接着说', '关于「20 文件待提交」，']])
+  same(client.noteAsks(notes[0]), [['帮我回', '陈工在飞书「发布群」找我，原话「那张图修了吗」。帮我起草一条回复，先给我看，别直接发。']])
+  same(client.noteAsks(notes[1]), [['接着说', '「20 文件待提交」：只差提交。帮我推进这件事：先说你的建议，需要我拍板的列出选项。']])
+  same(notes.map(n => [n.app, n.place]), [['飞书', '飞书　发布群'], ['电脑', '我的 Mac'], ['个人助理', '画像']], 'each note shows where it came from')
   same(client.noteAsks(notes[2]), [['开个任务', '在「画像」开个任务：补数据']])
   same(client.inboxNotes({}), [])
 })
@@ -106,4 +108,12 @@ test('a right panel starts open where it fits beside the conversation and closed
   fakeWindow.matchMedia = () => ({ matches: false })
   assert.equal(client.panelFits(), true)
   delete fakeWindow.matchMedia
+})
+
+test('a note from the assistant with no cited source, or one that names its project, says so in its foot', () => {
+  const notes = client.inboxNotes({ cards: [
+    { id: 'c_1', state: 'open', title: '陈工指出的坏图', body: '形状绘画代替生图', at: 2, source: { app: '飞书', where: '单聊' }, target: { projectName: 'figbook 线' } },
+    { id: 'c_2', state: 'open', title: '自己想到的', at: 1 },
+  ] })
+  same(notes.map(n => [n.app, n.place]), [['飞书', 'figbook 线'], ['个人助理', '个人助理']])
 })

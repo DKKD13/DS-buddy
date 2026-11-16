@@ -402,6 +402,7 @@ window.__ModuleLoader__.load({
 			sliders: "M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4",
 			moon: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z",
 			enter: "M20 4v7a4 4 0 0 1-4 4H4M9 10l-5 5 5 5",
+			monitor: "M3 4h18v12H3zM8 20h8M12 16v4",
 		};
 		function Icon({ name, size = 16 }) {
 			return h("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
@@ -3098,8 +3099,10 @@ window.__ModuleLoader__.load({
 			if (typeof p.ask === "string" && p.ask.trim()) return p.ask.trim();
 			if (p.lane === "do") return projectName ? `在「${projectName}」开个任务：${p.title}` : `开个任务：${p.title}`;
 			if (p.lane === "read") return `带我看看「${p.title}」，说说要点`;
-			return `关于「${p.title}」，`;
+			return `关于「${p.title}」${p.body ? `：${sentence(p.body)}` : "，"}说说你的看法和建议。`;
 		}
+		/** A line that ends a sentence, so a draft built from it reads as one whole request. Pure. */
+		function sentence(text) { const t = String(text || "").trim(); return !t || /[。！？.!?」）)]$/.test(t) ? t : t + "。"; }
 		/** Projects with something to show today: those holding asks first, then the most recently active. Pure. */
 		function inboxProjects(projects, waiting) {
 			return (projects || []).map(p => {
@@ -3115,8 +3118,8 @@ window.__ModuleLoader__.load({
 		const INBOX_PEEK = 4;
 		/** What a reminder's chip says and fills in, by where it came from. Pure. */
 		function noteAsks(note) {
-			if (note.from === "followup") return [["帮我回", `${note.who}在「${note.where}」找我，原话「${note.text}」，帮我看看怎么回`]];
-			if (note.from === "card") return [["接着说", `关于「${note.title}」，`]];
+			if (note.from === "followup") return [["帮我回", `${note.who}在${note.app}「${note.where}」找我，原话「${note.text}」。帮我起草一条回复，先给我看，别直接发。`]];
+			if (note.from === "card") return [["接着说", `「${note.title}」${note.text ? `：${sentence(note.text)}` : "。"}帮我推进这件事：先说你的建议，需要我拍板的列出选项。`]];
 			const label = note.lane === "do" ? "开个任务" : note.lane === "read" ? "带我看看" : "聊聊";
 			return [[label, note.ask]];
 		}
@@ -3126,9 +3129,13 @@ window.__ModuleLoader__.load({
 		 */
 		function inboxNotes({ followups, cards, dream, projectName }) {
 			const notes = [
-				...(followups || []).map(f => ({ key: "f" + f.conversation, from: "followup", app: f.app || "飞书", who: f.who, where: f.title, title: f.ask || `${f.who}在「${f.title}」找你`, text: f.text, at: f.since, f })),
-				...(cards || []).filter(c => c.state === "open").map(c => ({ key: "c" + c.id, from: "card", app: "个人助理", who: "个人助理", title: c.title, text: c.body || "", at: c.at, card: c })),
-				...(dream ? dream.picked.filter(p => !p.reaction).map(p => ({ key: "p" + p.lane, from: "pick", app: "个人助理", who: "个人助理", lane: p.lane, title: p.title, text: p.body || "", at: dream.startedAt, ask: pickAsk(p, projectName(p.projectId)), pick: p })) : []),
+				...(followups || []).map(f => ({ key: "f" + f.conversation, from: "followup", app: f.app || "飞书", place: `${f.app || "飞书"}　${f.title}`, who: f.who, where: f.title, title: f.ask || `${f.who}在「${f.title}」找你`, text: f.text, at: f.since, f })),
+				...(cards || []).filter(c => c.state === "open").map(c => {
+					// The icon is where the matter came from (the event the card cites); the foot is its project when it has one.
+					const src = c.source || null, project = c.target && c.target.projectName;
+					return { key: "c" + c.id, from: "card", app: src ? src.app : "个人助理", place: project || (src ? [src.app === "电脑" ? "" : src.app, src.where].filter(Boolean).join("　") : "个人助理"), who: "个人助理", title: c.title, text: c.body || "", at: c.at, card: c };
+				}),
+				...(dream ? dream.picked.filter(p => !p.reaction).map(p => ({ key: "p" + p.lane, from: "pick", app: "个人助理", place: projectName(p.projectId) || "个人助理", who: "个人助理", lane: p.lane, title: p.title, text: p.body || "", at: dream.startedAt, ask: pickAsk(p, projectName(p.projectId)), pick: p })) : []),
 			];
 			return notes.sort((a, b) => (b.at || 0) - (a.at || 0));
 		}
@@ -3138,7 +3145,7 @@ window.__ModuleLoader__.load({
 		 * into the composer. Status names live in tooltips. Lanes sit side by side when the panel is wide and stack when narrow.
 		 */
 		function MiraInbox({ today, waiting, nav, openTaskBy }) {
-			const [error, setError] = useState(null), [whole, setWhole] = useState({});
+			const [error, setError] = useState(null), [whole, setWhole] = useState({}), [showDone, setShowDone] = useState(false);
 			const draft = (from, text) => setError(draftInto(from, text) ? null : "先打开个人助理的对话，再点这里");
 			const say = kanbanLine({ dream: today.dream, now: Date.now(), hidden: kanbanHidden });
 			const projects = inboxProjects(today.projects, waiting);
@@ -3148,7 +3155,9 @@ window.__ModuleLoader__.load({
 			const skills = (today.dream && today.dream.skills) || [], anySkill = skills.some(s => s.proposal || s.trial);
 			const run = async work => { setError(null); try { await work(); } catch (e) { setError(String(e?.message || e)); } };
 			const react = (p, reaction) => run(() => act("dreamReact", { day: say.dream.day, lane: p.lane, reaction }));
-			const where = (projectId, name) => h("span", { className: "mp4-kb-where" }, known(projectId) ? h(ProjectMark, { p: known(projectId), size: 12, plain: true }) : null, h("span", { className: "mp4-ell" }, name));
+			const place = text => h("span", { className: "mp4-ell" }, text);
+			// Where a note came from: the app's own mark (飞书), the computer, or the assistant's neutral ring.
+			const sourceIcon = app => app === "电脑" ? h("span", { className: "mp4-kb-glyph" }, h(Icon, { name: "monitor", size: 16 })) : app && app !== "个人助理" ? h(AppIcon, { name: app, size: 16 }) : h(StatusIcon, { status: "note" });
 			const card = ({ key, at, icon, iconTip, title, body, foot, when, open, dismiss, quiet, tip }) => ({ at, el: h("div", {
 				key, className: "mp4-kb-card" + (quiet ? " mp4-kb-quiet" : ""), role: "button", tabIndex: 0, title: tip,
 				onClick: e => open(e.currentTarget), onKeyDown: e => { if (e.key === "Enter" && e.target === e.currentTarget) open(e.currentTarget); },
@@ -3157,8 +3166,9 @@ window.__ModuleLoader__.load({
 				body ? h("span", { className: "mp4-kb-body", title: typeof body === "string" ? body : undefined }, body) : null,
 				foot ? h("span", { className: "mp4-kb-foot" }, foot) : null,
 				dismiss ? h("button", { type: "button", className: "mp4-kb-x", title: dismiss[0], "aria-label": dismiss[0], onClick: e => { e.stopPropagation(); dismiss[1](); } }, h(Icon, { name: "close", size: 12 })) : null) });
-			const task = (p, t, status, extra) => card({ key: t.key || t.id, at: t.since || t.updatedAt, icon: h(StatusIcon, { status }), iconTip: STATUS_LOOK[status]?.[0], title: t.title,
-				foot: where(p.id, p.name), when: ago(t.since || t.updatedAt), open: () => openTaskBy(p.id, t.threadId || t.id), tip: `打开「${t.title}」`, ...extra });
+			// A task's context is its project: the project's own mark on the left, the project and the task's status in the foot.
+			const task = (p, t, status, extra) => card({ key: t.key || t.id, at: t.since || t.updatedAt, icon: known(p.id) ? h(ProjectMark, { p: known(p.id), size: 16, plain: true }) : h(StatusIcon, { status }), iconTip: p.name, title: t.title,
+				foot: place(`${p.name}　${STATUS_LOOK[status]?.[0] || ""}`.trim()), when: ago(t.since || t.updatedAt), open: () => openTaskBy(p.id, t.threadId || t.id), tip: `打开「${t.title}」`, ...extra });
 			const waitStatus = x => x.kind === "decision" ? "decision" : x.kind === "failed" ? "failed" : "review";
 			const note = n => {
 				const reply = noteAsks(n)[0][1];
@@ -3167,23 +3177,26 @@ window.__ModuleLoader__.load({
 					: ["不感兴趣", () => react(n.pick, "not_interested")];
 				const after = n.from === "pick" ? () => react(n.pick, n.lane === "do" ? "started" : n.lane === "read" ? "opened" : "noted") : null;
 				// The same ring family as the task cards; where it came from (个人助理, 飞书) is in the tooltip and the foot.
-				return card({ key: n.key, at: n.at, icon: h(StatusIcon, { status: "note" }), iconTip: `${STATUS_LOOK.note[0]}：${n.app}`, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
-					foot: n.from === "followup" ? `${n.who}　${n.where}` : n.app, when: n.at ? ago(n.at) : "", dismiss, tip: `把回复填进输入框：${reply}`,
+				return card({ key: n.key, at: n.at, icon: sourceIcon(n.app), iconTip: n.app, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
+					foot: place(n.place), when: n.at ? ago(n.at) : "", dismiss, tip: `填进输入框：${reply}`,
 					open: from => { draft(from, reply); if (after) after(); } });
 			};
 			const byTime = list => list.sort((a, b) => (b.at || 0) - (a.at || 0)).map(x => x.el);
 			const lanes = [
 				["wait", "等你", byTime([...projects.flatMap(p => p.waits.map(x => task(p, x, waitStatus(x), { body: x.kind === "decision" ? x.ask : x.summary }))), ...notes.map(note)])],
 				["run", "进行中", byTime(projects.flatMap(p => p.working.map(t => task(p, t, "working", { body: t.summary || null }))))],
-				["done", "今天完成", byTime(projects.flatMap(p => p.done.map(t => task(p, t, "done", { quiet: true }))))],
+				["done", "今天完成", showDone ? byTime(projects.flatMap(p => p.done.map(t => task(p, t, "done", { quiet: true, body: t.summary || null })))) : []],
 			].filter(([, , cards]) => cards.length);
+			// 待你决定 is what waits on you: finished work stays out of sight until asked for.
+			const doneCount = projects.reduce((n, p) => n + p.done.length, 0);
+			const doneTool = doneCount ? h("button", { type: "button", className: "mp4-kb-tool" + (showDone ? " mp4-kb-tool-on" : ""), title: showDone ? "收起今天完成" : `今天完成 ${doneCount} 件`, "aria-label": showDone ? "收起今天完成" : `今天完成 ${doneCount} 件`, "aria-pressed": showDone, onClick: () => setShowDone(v => !v) }, h(Icon, { name: "check", size: 14 })) : null;
 			const diary = say ? h("button", { type: "button", className: "mp4-kb-tool", title: "昨晚的日记", "aria-label": "昨晚的日记", onClick: () => window.open("api/mira-projects/dream/diary?day=" + encodeURIComponent(say.dream.day), "_blank", "noopener") }, h(Icon, { name: "moon", size: 14 })) : null;
-			if (!lanes.length && !anySkill) return h("p", { className: "mp4-ib-empty" }, "没有等你的事。");
+			if (!lanes.length && !anySkill) return h("p", { className: "mp4-ib-empty" }, "没有等你的事。", doneTool);
 			return h(React.Fragment, null,
 				h("div", { className: "mp4-kb" }, lanes.map(([id, label, cards]) => {
 					const shown = whole[id] ? cards : cards.slice(0, 8);
 					return h("section", { key: id, className: "mp4-kb-lane mp4-kb-lane-" + id },
-						h("h3", { className: "mp4-kb-head" }, label, h("span", { className: "mp4-kb-n" }, cards.length), id === "wait" ? diary : null),
+						h("h3", { className: "mp4-kb-head" }, label, h("span", { className: "mp4-kb-n" }, cards.length), id === lanes[0][0] ? h("span", { className: "mp4-kb-tools" }, id === "wait" ? diary : null, doneTool) : null),
 						h("div", { className: "mp4-kb-cards" }, shown,
 							cards.length > shown.length || whole[id] && cards.length > 8 ? h("button", { type: "button", className: "mp4-kb-more", onClick: () => setWhole(s => ({ ...s, [id]: !s[id] })) }, whole[id] ? "收起" : `还有 ${cards.length - shown.length} 件`) : null));
 				})),
@@ -5241,7 +5254,12 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-kb-body{padding-left:24px;font-size:13px;line-height:20px;color:var(--mp4-fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mp4-kb-foot{margin-top:auto;padding-left:24px;min-width:0;display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3);overflow:hidden;white-space:nowrap}
 .mp4-kb-where{display:inline-flex;align-items:center;gap:4px;min-width:0}
-.mp4-kb-lane:not(.mp4-kb-lane-done) .mp4-kb-card{min-height:82px}
+.mp4-kb-card{min-height:82px}
+.mp4-kb-tools{margin-left:auto;display:inline-flex;align-items:center;gap:2px}
+.mp4-kb-tools .mp4-kb-tool{margin-left:0}
+.mp4-kb-tool-on{background:var(--rx-gray-4);color:var(--mp4-fg)}
+.mp4-kb-glyph{display:inline-flex;color:var(--mp4-fg2)}
+.mp4-ib-empty .mp4-kb-tool{margin-left:6px;vertical-align:middle}
 .mp4-kb-quiet .mp4-kb-title{font-weight:400;color:var(--mp4-fg2)}
 .mp4-kb-x{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:9px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;color:var(--mp4-fg3);background:var(--mp4-bg);opacity:0;transition:opacity 250ms ease-out,background 250ms ease-out}
 .mp4-kb-card:hover .mp4-kb-x,.mp4-kb-x:focus-visible{opacity:1}.mp4-kb-x:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}@media (hover:none){.mp4-kb-x{opacity:1}}

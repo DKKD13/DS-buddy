@@ -27,6 +27,25 @@ export function dayBounds(day, now = Date.now()) {
 
 export const ref = (projectId, seq) => `${projectId}#${seq}`
 
+/**
+ * Where a hub card's matter came from, read off the events it cites (refs "hub#seq"): a Feishu chat or another app the
+ * computer saw, or the computer itself. Mechanical: only the cited event's own fields, never the card's wording. Null when
+ * no cited event names a source.
+ */
+export function cardSource(card, hub) {
+  for (const cited of card?.refs ?? []) {
+    const m = /^hub#(\d+)$/.exec(String(cited))
+    if (m === null) continue
+    const seq = Number(m[1]), at = hub.events[seq - 1]
+    const event = at?.seq === seq ? at : hub.events.find(e => e.seq === seq)
+    if (event === undefined) continue
+    if (event.type === 'feishu.attention') return { app: '飞书', where: event.title ?? null }
+    if (event.type === 'observation.accepted' && typeof event.app === 'string' && event.app) return { app: event.app, where: event.title ?? null }
+    if (event.type === 'pc.activity') return { app: '电脑', where: event.deviceName ?? null }
+  }
+  return null
+}
+
 function who(project, author) {
   if (author?.kind === 'human') return '你'
   if (author?.kind === 'system') return '系统'
@@ -214,6 +233,7 @@ export function buildDay(store, hub, { day, now = Date.now(), status, execution 
   // An open card whose task the board already lists, or whose task is closed, would be a second copy of that task
   // (fresh-install run, 2026-11-16: a 「请验收」 card stayed next to the task, and stayed after the task was accepted).
   const cards = hub === undefined ? [] : hub.cardOrder.map(id => hub.cards.get(id)).filter(c => c.state === 'open' ? cardCovered(c, store.projects) === null : inDay(c.at)).reverse()
+    .map(c => ({ ...c, source: cardSource(c, hub) }))
   return {
     day: key, isToday, start, end, now,
     totals, waiting, projects, timeline,
