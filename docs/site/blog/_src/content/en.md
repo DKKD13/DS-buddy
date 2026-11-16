@@ -26,7 +26,7 @@ That is where DS-buddy starts.
 
 The multi-agent products on the market expose too much. Multica and Raft both offer a very good layer of abstraction, organising work through group chats and through tickets being passed along. It is a good way to organise, and it still isn't effortless enough. For a person, building context and dividing up the work is itself hard work. Ideally the AI does that layer.
 
-For the AI to be able to, it first has to have taken in enough of your context. That is what Multica and Raft lack today: the one dividing work into projects and tasks is still the person. So the most important design in DS-buddy is **collecting context**. What you are doing on screen and the messages in Feishu keep coming in and are organised by project, and files on your computer are read when it needs them. That is how the AI comes to know enough about you.
+For the AI to be able to, it first has to have taken in enough of your context. In Multica and Raft, how a job is split and what background each piece carries is still mostly decided by the person. So the most important design in DS-buddy is **collecting context**. What you are doing on screen and the messages in Feishu keep coming in and are organised into a timeline every 10 minutes, filed under a project when it is clear which one. Files on your computer are read when it needs them. All of it is read-only and can be turned off at any time. That is how the AI comes to know enough about you.
 
 The assistant inside is called Tacit by default, as in tacit understanding. I think a really good buddy should already know everything relevant to the job before you open your mouth.
 

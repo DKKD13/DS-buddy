@@ -24,7 +24,7 @@ The sidebar gains a personal assistant and projects. Create a project and state 
 ## How it thinks
 
 - **No agents for you to manage.** Work needs only context and a model. You say what to do, where the context is and what the standard is. It splits that into tasks, each carrying its own context.
-- **Context comes in by itself.** What you do on screen and the messages in Feishu are organised into a timeline filed by project. All of it is read-only and can be turned off at any time.
+- **Context comes in by itself.** What you do on screen and the messages in Feishu are organised into a timeline, filed under a project when it is clear which one. All of it is read-only and can be turned off at any time.
 - **The execution layer can be swapped.** Tasks run in DeepSeek Harness by default and can be switched to Claude Code per task. The record stays on the task, so nothing is lost in the switch.
 - **It comes to you only when it is your turn.** A decision is yours, a delivery waits for your acceptance, or it is stuck. A job is done only after you accept it.
 

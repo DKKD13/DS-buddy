@@ -177,7 +177,7 @@ I'm not sure DS-buddy's current design is the best one. But these shouldn't be d
 
 Multica and Raft both offer a very good layer of abstraction. Multica uses tickets: agents pick up issues on a board and write results as comments. Raft uses group chat: agents sit in channels, read when they are @-mentioned, and claim tasks themselves. These are good ways to organise, and results land on a shared record that people and other agents can see.
 
-It still isn't effortless enough. Someone has to set up the channel, open the issue and decide who to @ for what. For a person, building context and dividing up the work is itself hard work. Ideally the AI does that layer.
+It still isn't effortless enough. Someone has to set up the channel, usually open the issue, and often decide who takes what. For a person, building context and dividing up the work is itself hard work. Ideally the AI does that layer.
 
 | Architecture | How context gets in | Organised by | What you manage | How you know it's your turn |
 | --- | --- | --- | --- | --- |
@@ -192,7 +192,7 @@ This table is my reading of each product's public material. It marks a kind of a
 
 ## The most important design: collecting context
 
-For the AI to do the dividing itself, it first has to have taken in enough of your context. That is what Multica and Raft lack today: the one dividing work into projects and tasks is still the person. So the most important design in DS-buddy is collecting context.
+For the AI to do the dividing itself, it first has to have taken in enough of your context. In Multica and Raft, how a job is split and what background each piece carries is still mostly decided by the person. So the most important design in DS-buddy is collecting context.
 
 ![Every 10 minutes, raw records are organised into what you were doing](img/film-10min.jpg "How the timeline is made: raw records land on a time bar and are organised every 10 minutes. Illustration.")
 
@@ -200,7 +200,7 @@ This is how it is made:
 
 1. The app, window title and text on screen are read once a minute, and Feishu messages every 2 minutes. All of it is read-only, and screenshots stay on your computer.
 2. Every 10 minutes it cuts a window and hands it to one small-model call, together with what you were doing before and which projects you have.
-3. The model writes 0 to 3 activities in your own task wording and files them under the right project.
+3. The model writes 0 to 3 activities in your own task wording, and files one under a project when it clearly belongs there.
 4. Code checks the sources: every activity must point back to raw records in that window, and anything that can't is dropped.
 
 ![The timeline: a morning's activities, each with the apps used and its project](img/film-timeline.jpg "The organised timeline. Each entry carries the apps used and the project it belongs to.")
@@ -236,6 +236,7 @@ The assistant inside is called Tacit by default, as in tacit understanding. I th
 
 - Feedback still depends mostly on people. I'm still finding out which steps can go to automatic checks.
 - The timeline isn't always right. Neighbouring windows can be pulled along by the one before and written up as the same activity. The raw records are kept, but you have to notice.
+- Tasks are split by the AI, but a project is still created by you, or by the assistant when you ask.
 - Switching the executor takes effect only after a turn ends, and there is no good answer yet for handing over mid-turn. Codex as an executor has not yet been verified through a complete task.
 - How each agent's context is put together when it starts, and how the cache is used: I'm not sure the current way is the best.
 - More context needs more protection against contamination. Marking the source of every item is a first step, and real use will show whether it is enough.
