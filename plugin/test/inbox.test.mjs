@@ -83,3 +83,15 @@ test('the suggested lines above the composer offer each line once, also when one
   same(client.suggestionsFor(waiting, new Set()), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了', '今天做了什么'])
   same(client.suggestionsFor(waiting, new Set(['今天做了什么'])), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了'], 'a line already said is not offered again')
 })
+
+test('the @ menu does not show a data path under a conversation that works in the plugin\'s own storage', () => {
+  const rows = [
+    { name: '个人助理', icon: 'session', section: '对话', description: '~/.local/state/tacit/data/_hub/_folders/hub/个人助理 · 6分钟' },
+    { name: '写媒体问答', icon: 'session', section: '对话', description: '~/data/_folders/p_1a2b3c4d5e/发布会 · 2小时' },
+    { name: '老项目的任务', icon: 'session', section: '对话', description: '/srv/tacit/p_0123456789/老项目' },
+    { name: '改版首页首屏', icon: 'session', section: '对话', description: '~/code/site · 3分钟' },
+    { name: 'notes.md', icon: 'file', section: '文件', description: '~/data/_folders/p_1a2b3c4d5e/发布会/notes.md' },
+  ]
+  same(client.titledOnly(rows).map(r => r.description), ['6分钟', '2小时', '', '~/code/site · 3分钟', '~/data/_folders/p_1a2b3c4d5e/发布会/notes.md'])
+  assert.equal(rows[0].description.startsWith('~/.local'), true, 'the host\'s own row objects are left as they were')
+})

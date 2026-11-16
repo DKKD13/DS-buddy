@@ -1472,7 +1472,12 @@ window.__ModuleLoader__.load({
 		const RAW_SESSION_ID = /^session-[0-9a-f]{8}-[0-9a-f-]{20,}$/i;
 		// Also left out: the conversations this plugin keeps for its own plumbing, named by the plugin itself (the memory assistant's, the timer courier's).
 		const OWN_PLUMBING = /(的记忆助理| · 定时投递)$/;
-		const titledOnly = rows => Array.isArray(rows) ? rows.filter(r => !(r && r.icon === "session" && (RAW_SESSION_ID.test(String(r.name || "")) || OWN_PLUMBING.test(String(r.name || ""))))) : rows;
+		// The host writes a conversation's folder under its name. For one that works in this plugin's own storage that is a
+		// data path nobody chose (the personal assistant's showed up that way in a project's @ menu): only its age is kept.
+		const OWN_STORAGE = /\/(?:_hub|_folders)\/|\/p_[0-9a-f]{8,}\//;
+		const withoutDataPath = r => r && r.icon === "session" && typeof r.description === "string" && OWN_STORAGE.test(r.description)
+			? { ...r, description: r.description.includes(" · ") ? r.description.slice(r.description.lastIndexOf(" · ") + 3) : "" } : r;
+		const titledOnly = rows => Array.isArray(rows) ? rows.filter(r => !(r && r.icon === "session" && (RAW_SESSION_ID.test(String(r.name || "")) || OWN_PLUMBING.test(String(r.name || ""))))).map(withoutDataPath) : rows;
 		function hideUntitledSessions(triggers) {
 			try {
 				const source = triggers?.live?.sources?.find(s => s.trigger === "@" && s.name === "reference");
