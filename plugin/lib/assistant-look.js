@@ -14,7 +14,7 @@ const HOTKEY_CODE = /^(Key[A-Z]|Digit[0-9]|Space|Period|Comma|Slash|Semicolon|Qu
 
 export const DEFAULT_HOTKEY = { code: 'KeyM', alt: true, meta: false, ctrl: false, shift: false }
 export const LOOK_TEMPLATES = [
-  { id: 'sprout', name: '小芽', color: 'yellow', shape: 'mochi', eyes: 'dot', accessory: 'sprout', traits: ['温和', '细心'] },
+  { id: 'sprout', name: 'Tacit', color: 'yellow', shape: 'mochi', eyes: 'dot', accessory: 'sprout', traits: ['温和', '细心'] },
   { id: 'owl', name: '夜读', color: 'purple', shape: 'round', eyes: 'dot', accessory: 'glasses', traits: ['安静', '严谨'] },
   { id: 'spark', name: '火花', color: 'orange', shape: 'mochi', eyes: 'star', accessory: 'antenna', traits: ['热情', '幽默'] },
   { id: 'tidy', name: '方方', color: 'teal', shape: 'block', eyes: 'dot', accessory: 'cap', traits: ['有条理', '干脆'] },

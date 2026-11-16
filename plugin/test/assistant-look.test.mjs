@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import { ProjectStore, MIRA } from '../lib/store.js'
 import { ensureHub, HUB_ID, hubLiveContext } from '../lib/hub.js'
-import { AssistantLook, DEFAULT_LOOK, LOOK_TEMPLATES, LOOK_TRAITS, normalizeLook, parseLookReply } from '../lib/assistant-look.js'
+import { AssistantLook, DEFAULT_LOOK, LOOK_ACCESSORIES, LOOK_TEMPLATES, LOOK_TRAITS, normalizeLook, parseLookReply } from '../lib/assistant-look.js'
 
 function hub(t, complete) {
   const root = mkdtempSync(join(tmpdir(), 'mira-look-'))
@@ -135,4 +135,11 @@ test('words typed straight into the session keep their mark, so a wake never sho
   f.hubStore.append(HUB_ID, { type: 'message.posted', messageId: 'm_native', threadId: null, author: { kind: 'human', id: 'owner' }, trust: 'principal', text: '直接打的', mentions: [], to: [], native: true })
   const replay = new ProjectStore(f.root, { warn() {} }); replay.load()
   assert.equal(replay.get(HUB_ID).messages.get('m_native').native, true)
+})
+
+test('the assistant is called Tacit until the owner names it, on the server and in the page', () => {
+  assert.equal(DEFAULT_LOOK.name, 'Tacit')
+  assert.equal(LOOK_TEMPLATES[0].name, 'Tacit')
+  assert.equal(client.LOOK_TEMPLATES[0].name, 'Tacit')
+  assert.equal(LOOK_ACCESSORIES.sprout, '小芽', 'the sprout accessory keeps its own label')
 })

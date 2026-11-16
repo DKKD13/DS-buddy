@@ -261,7 +261,7 @@ export class Dream {
   diaryInput({ picked, dropped, empty, times, rhythm, muted }) {
     const look = this.look?.current?.() ?? null
     return [
-      `你的名字：${look?.name ?? '小芽'}${look?.traits?.length ? `；用户希望你${look.traits.join('、')}` : ''}`,
+      `你的名字：${look?.name ?? 'Tacit'}${look?.traits?.length ? `；用户希望你${look.traits.join('、')}` : ''}`,
       `他最后一次在电脑上打字：${rhythm.lastActive ? clock(rhythm.lastActive) : '不知道'}`,
       `你猜他早上几点醒：${rhythm.wakeHour === null ? '猜不出来' : `${p2(Math.floor(rhythm.wakeHour))}:${p2(Math.round((rhythm.wakeHour % 1) * 60))}`}`,
       `昨晚开始想的时间：${clock(times[0])}；想完的时间：${clock(times.at(-1))}`,
@@ -493,7 +493,7 @@ const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<
 
 /** The diary page for one morning, rendered from checked text only. */
 export function diaryHtml(done, look) {
-  const name = look?.name ?? '小芽', d = new Date(done.at), week = '日一二三四五六'[d.getDay()]
+  const name = look?.name ?? 'Tacit', d = new Date(done.at), week = '日一二三四五六'[d.getDay()]
   const date = `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日　星期${week}`
   const diary = done.diary
   const body = !diary ? `<p>这一晚没有留下值得写的事。${escape((done.rejected ?? [])[0] ?? '')}</p>` : `

@@ -3963,7 +3963,7 @@ window.__ModuleLoader__.load({
 		}
 		/** Radix step-9 colours the assistant can wear (same names as project colours). */
 		const LOOK_FILLS = { yellow: "#ffc53d", orange: "#f76b15", red: "#e5484d", pink: "#d6409f", purple: "#8e4ec6", blue: "#0090ff", teal: "#12a594", green: "#30a46c", gray: "#8d8d8d" };
-		const LOOK_DEFAULT = { name: "小芽", color: "yellow", shape: "mochi", eyes: "dot", accessory: "sprout", traits: ["温和", "细心"] };
+		const LOOK_DEFAULT = { name: "Tacit", color: "yellow", shape: "mochi", eyes: "dot", accessory: "sprout", traits: ["温和", "细心"] };
 		const LOOK_BODIES = {
 			mochi: ["", "", ".....oooo.....", "...ooyyyyoo...", "..oyhhyyyyso..", ".oyhyyyyyyyso.", ".oyyffffffyso.", ".oyffffffffso.", ".oyffffffffso.", ".oyyffffffyso.", ".oyssssssssso.", "..oooooooooo.."],
 			round: ["", "", "....oooooo....", "...oyyyyyyo...", "..oyhhyyyyso..", ".oyhyyyyyyyso.", ".oyyffffffyso.", ".oyffffffffso.", ".oyffffffffso.", ".oyyffffffyso.", "..oyssssssso..", "...oooooooo..."],
@@ -4101,7 +4101,7 @@ window.__ModuleLoader__.load({
 		// ---------------------------------------------------------------- the assistant's look: studio, hotkey, pet
 		const LOOK_TRAIT_LIST = ["温和", "干脆", "幽默", "严谨", "好奇", "安静", "热情", "冷静", "细心", "直接", "乐观", "有条理"];
 		const LOOK_TEMPLATES = [
-			{ id: "sprout", name: "小芽", color: "yellow", shape: "mochi", eyes: "dot", accessory: "sprout", traits: ["温和", "细心"] },
+			{ id: "sprout", name: "Tacit", color: "yellow", shape: "mochi", eyes: "dot", accessory: "sprout", traits: ["温和", "细心"] },
 			{ id: "owl", name: "夜读", color: "purple", shape: "round", eyes: "dot", accessory: "glasses", traits: ["安静", "严谨"] },
 			{ id: "spark", name: "火花", color: "orange", shape: "mochi", eyes: "star", accessory: "antenna", traits: ["热情", "幽默"] },
 			{ id: "tidy", name: "方方", color: "teal", shape: "block", eyes: "dot", accessory: "cap", traits: ["有条理", "干脆"] },
