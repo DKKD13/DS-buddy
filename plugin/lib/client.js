@@ -639,6 +639,7 @@ window.__ModuleLoader__.load({
 			const hideText = card && card.kind === "decision";
 			return h(React.Fragment, null,
 				hideText ? null : h("div", { className: "mp-msg-text" }, h(RichText, { text: message.text, members: project.members })),
+				message.handoff && message.handoff.note ? h("div", { className: "mp-hint" }, `助理补充：${message.handoff.note}`) : null,
 				message.handoff ? h("button", { type: "button", className: "mp-source-link", onClick: () => navigateHome(message.handoff.sourceRef) }, "来自个人助理，查看原话") : null,
 				body,
 				h(FileLinks, { project, files: message.attachments }),
@@ -1096,7 +1097,7 @@ window.__ModuleLoader__.load({
 					members: project.members, project,
 					placeholder: "继续这件事，补充要求或反馈…",
 					draftKey: `${project.id}:${thread.id}`,
-					onSend: (text) => act("post", { projectId: project.id, threadId: thread.id, text }),
+					onSend: (text) => act("post", { projectId: project.id, threadId: thread.id, text, typed: text }),
 					prefill: prefill && prefill.target === thread.id ? prefill : null,
 				})));
 		}
@@ -1594,7 +1595,7 @@ window.__ModuleLoader__.load({
 					h(Composer, {
 						members: project.members, project,
 						placeholder: `发到 #${project.name}`,
-						onSend: (text) => act("post", { projectId: project.id, text }),
+						onSend: (text) => act("post", { projectId: project.id, text, typed: text }),
 						prefill: prefill && prefill.projectId === project.id && prefill.target === "chat" ? prefill : null,
 						draftKey: `${project.id}:chat`,
 					})));
@@ -2612,7 +2613,7 @@ window.__ModuleLoader__.load({
 				h(Section, { label: "对话" },
 					h("div", { className: "mp4-filepane mp4-thread" },
 						(thread.timeline || []).length ? h(Timeline, { rows: thread.timeline, project, onOpenThread: () => {}, onAnswer: answer, showThreadLabel: false }) : h("p", { className: "mp4-muted" }, "还没有消息。"),
-						closed ? null : h(Composer, { members: project.members, project, placeholder: `给 ${next ? name : "DSH"} 留言`, draftKey: `${project.id}:${thread.id}`, onSend: text => act("post", { projectId: project.id, threadId: thread.id, text }) }))));
+						closed ? null : h(Composer, { members: project.members, project, placeholder: `给 ${next ? name : "DSH"} 留言`, draftKey: `${project.id}:${thread.id}`, onSend: text => act("post", { projectId: project.id, threadId: thread.id, text, typed: text }) }))));
 		}
 
 		function ProjectSession({ project, projects, threadId, onCreate }) {
@@ -2660,7 +2661,7 @@ window.__ModuleLoader__.load({
 					h(LiveReply, { project, memberId: "mira", assistant: project.mira })),
 				composer: h(React.Fragment, null,
 					h(WorkingLine, { project, onOpenThread: openThread }),
-					h(Composer, { members: project.members, project, placeholder: "发消息或交代一件事", draftKey: `${project.id}:chat`, onSend: text => act("post", { projectId: project.id, text }) })),
+					h(Composer, { members: project.members, project, placeholder: "发消息或交代一件事", draftKey: `${project.id}:chat`, onSend: text => act("post", { projectId: project.id, text, typed: text }) })),
 				panel: h(SidePanel, { tabs, info, guides, wide, onWide: () => setWide(v => !v), onHide: () => setPanelOpen(false) }, panelBody),
 			});
 		}

@@ -102,6 +102,9 @@ function seqList(value, field) {
   return clean
 }
 
+/** A model sometimes copies the platform's escaping back (`Q&amp;A`). The owner reads these fields as plain text. */
+const plain = value => typeof value === 'string' ? value.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&amp;', '&') : value
+
 export class Actions {
   /**
    * @param {import('./store.js').ProjectStore} store
@@ -302,9 +305,12 @@ export class Actions {
     return { ok: true }
   }
 
-  ownerPost({ projectId, threadId, text: body, file_paths = [] }, context = {}) {
+  ownerPost({ projectId, threadId, text: body, file_paths = [], typed }, context = {}) {
     const project = this.store.get(projectId)
     const content = text(body, '消息')
+    // `typed`: the part of the text the owner typed themself. Only that part counts as their own words for memory
+    // and the night review; a canned line or a handoff posted in their name carries none.
+    const own = typeof typed === 'string' && typed.trim() !== '' && content.includes(typed.trim()) ? typed.trim() : undefined
     if (file_paths.length && !this.files) throw new Error('项目文件服务尚未就绪')
     const attachments = this.files?.attachments(projectId, file_paths) ?? []
     const thread = threadId ? project.threads.get(threadId) : undefined
@@ -328,6 +334,7 @@ export class Actions {
       author: { kind: 'human', id: 'owner' }, trust: 'principal', text: content, mentions, to, ...(miraFirst ? { miraFirst: true } : {}),
       ...(attachments.length ? { attachments } : {}),
       ...(context.handoff ? { handoff: context.handoff } : {}),
+      ...(own ? { typed: own } : {}),
     }, mentions.length > 0 ? 'mention' : 'message')
     return { messageId: event.messageId }
   }
@@ -345,7 +352,7 @@ export class Actions {
     const project = this.store.get(at.projectId), thread = project?.threads.get(at.key.slice(2))
     if (thread === undefined || thread.resolved || thread.state === 'done') return null
     if (current !== undefined && this.runnerOf(project, at.key) === (project.sessions.get(at.key)?.runtime ?? 'dsh')) return null
-    return { projectId: project.id, threadId: thread.id, runner: this.runnerOf(project, at.key), ...this.ownerPost({ projectId: project.id, threadId: thread.id, text: body }) }
+    return { projectId: project.id, threadId: thread.id, runner: this.runnerOf(project, at.key), ...this.ownerPost({ projectId: project.id, threadId: thread.id, text: body, typed: body }) }
   }
 
   /**
@@ -567,6 +574,7 @@ export class Actions {
   }
 
   openThread(project, { title, brief, note, assignee, priority, cite_message_ids, related_thread_id }) {
+    title = plain(title); brief = plain(brief); note = plain(note)
     if (related_thread_id !== undefined && !project.threads.has(related_thread_id)) throw new Error('来源线程必须属于当前项目')
     // An executor named on purpose (an older task's, or one the owner set up) still takes the task; otherwise the project's.
     const named = typeof assignee === 'string' && assignee.trim() !== ''

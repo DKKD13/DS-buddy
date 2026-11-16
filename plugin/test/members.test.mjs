@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ProjectStore, workerKey } from '../lib/store.js'
 import { Actions } from '../lib/actions.js'
-import { Driver } from '../lib/driver.js'
+import { Driver, defaultFolder } from '../lib/driver.js'
 import { rolePrompt } from '../lib/protocol.js'
 
 const selection = { provider: 'kth', model: 'kimi-k2.8-highspeed' }
@@ -117,4 +117,20 @@ test('renaming a project keeps the original default directory and its delivery f
   await driver.workspaceFor(e.project)
   assert.equal(paths[1], paths[0])
   assert.equal(readFileSync(join(paths[1], 'delivery.txt'), 'utf8'), 'keep this result')
+})
+
+test('a project without a folder works apart from its own log; one that already has the old folder keeps it', async t => {
+  const e = setup(t), paths = []
+  const ctx = { get: key => key === 'workspaceRegistry' ? { create: async path => { paths.push(path);return { id: 'workspace' } } } : undefined, logger: { warn() {} } }
+  await new Driver(ctx, e.store, c => c).workspaceFor(e.project)
+  assert.equal(paths[0], join(e.store.root, '_folders', e.project.id, '配置项目'))
+  assert.equal(readFileSync(join(e.store.root, e.project.id, 'events.jsonl'), 'utf8').includes(e.project.nonce), true, 'the log holds the trust mark')
+  assert.throws(() => readFileSync(join(paths[0], '..', 'events.jsonl')), /ENOENT/, 'and it is not next to the work folder')
+  // A folder made before this change stays where it is, with what was delivered into it.
+  const old = join(e.store.root, e.project.id, '配置项目')
+  mkdirSync(old, { recursive: true })
+  assert.equal(defaultFolder(e.store, e.project), old)
+  // A second store on the same data loads the same projects: the work folders are not taken for projects.
+  const again = new ProjectStore(e.store.root, { warn() {} });again.load()
+  assert.deepEqual([...again.projects.keys()], [...e.store.projects.keys()])
 })

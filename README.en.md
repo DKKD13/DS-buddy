@@ -46,7 +46,7 @@ Needs DSH 0.2.x with the web profile, and Node 24 or later.
 
 ```sh
 git clone https://github.com/DKKD13/tacit-dsh
-cd tacit-dsh/plugin && npm test          # 478 unit tests
+cd tacit-dsh/plugin && npm test          # 484 unit tests
 dsh plugin --profile web add "$(pwd)"
 dsh --profile web
 ```

@@ -8,6 +8,7 @@ import { COORDINATOR, MIRA, PERSONAL_NAME, STARTER_MEMBERS, workerKey } from './
 import { STATE_LABEL } from './protocol.js'
 import { dockHtml } from './dock.js'
 import { HUB_ID, todayView } from './hub.js'
+import { cardCovered } from './today.js'
 import { diaryHtml } from './dream.js'
 import { todayHtml } from './today-page.js'
 import { conversationDetail, historyWindowDetail, workersView } from './workers-view.js'
@@ -50,7 +51,7 @@ function message(project, id) {
     id: m.id, seq: m.seq, at: m.at, threadId: m.threadId, trust: m.trust, text: m.text, native: m.native === true,
     author: { ...m.author, name: m.via === 'personal' ? PERSONAL_NAME : memberName(project, m.author) },
     mentions: m.mentions, card: m.card ?? null, reactions: m.reactions,
-    ...(m.handoff ? { handoff: { id: m.handoff.id, sourceRef: m.handoff.sourceRef, sourceMessageId: m.handoff.sourceMessageId } } : {}),
+    ...(m.handoff ? { handoff: { id: m.handoff.id, sourceRef: m.handoff.sourceRef, sourceMessageId: m.handoff.sourceMessageId, ...(m.handoff.note ? { note: m.handoff.note } : {}) } } : {}),
     attachments: m.attachments.map(item => {
       const file = [...project.files.values()].find(file => file.id === item.fileId)?.versions.at(-1)
       return { ...item, latestRevision: file?.revision ?? item.revision }
@@ -216,7 +217,7 @@ function assistant(project, key, driver) {
 function dock(store, driver, hubStore, deviceExecutions) {
   const cards = []
   const hub = hubStore?.projects.get(HUB_ID)
-  for (const c of hub === undefined ? [] : hub.cardOrder.map(id => hub.cards.get(id)).filter(c => c.state === 'open')) {
+  for (const c of hub === undefined ? [] : hub.cardOrder.map(id => hub.cards.get(id)).filter(c => c.state === 'open' && cardCovered(c, store.projects) !== 'closed')) {
     // Hub cards act through the hub (projectId: hub) and jump into the project they point at.
     cards.push({
       ...miraCard(hub, c), projectId: HUB_ID, projectName: `个人助理${c.target?.projectName ? ` · ${c.target.projectName}` : ''}`,

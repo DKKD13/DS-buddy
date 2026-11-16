@@ -17,7 +17,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { createUserMessage, BlockAssembler } from '@deepseek-ai/dsh-llm'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { COORDINATOR, MIRA, ProjectStore } from './store.js'
-import { Driver, folderName } from './driver.js'
+import { Driver, defaultFolder } from './driver.js'
 import { Actions, finalText, toolPaths } from './actions.js'
 import { MiraService } from './mira.js'
 import { createTools, visibleTo, maskPluginTools } from './tools.js'
@@ -74,7 +74,7 @@ export function apply(ctx, config = {}) {
     const timer = setInterval(() => maintenance.collect().catch(error => ctx.logger.warn('项目文件GC失败', error)), config.fileGcIntervalMs ?? 60 * 60 * 1000)
     timer.unref();ctx.effect(() => () => clearInterval(timer), 'mira-projects: file maintenance')
   }
-  const files = new ProjectFiles(store, driver, { blobs, workspace: (project, key) => project.threads.get(key.slice(2))?.workspace?.cwd ?? project.cwd ?? join(store.root, project.id, folderName(project)) })
+  const files = new ProjectFiles(store, driver, { blobs, workspace: (project, key) => project.threads.get(key.slice(2))?.workspace?.cwd ?? project.cwd ?? defaultFolder(store, project) })
   const actions = new Actions(store, driver, { files })
   const repositories = new ProjectRepositories(files);driver.repositories = repositories
   let devices

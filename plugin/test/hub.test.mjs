@@ -14,7 +14,7 @@ import { MiraService } from '../lib/mira.js'
 import { createTools, visibleTo } from '../lib/tools.js'
 import { HUB_ID, HubActions, HubService, ensureHub, hubRolePrompt, hubWakeText, hubContinuity, todayView } from '../lib/hub.js'
 import { createHubTools, visibleToHub } from '../lib/hub-tools.js'
-import { buildDay, dayBounds, renderDay } from '../lib/today.js'
+import { buildDay, cardCovered, dayBounds, renderDay } from '../lib/today.js'
 import { snapshot } from '../lib/http.js'
 import { todayHtml } from '../lib/today-page.js'
 
@@ -209,8 +209,12 @@ test('recap, memory and cards need cross-project refs; the board and the dock sh
 
   assert.throws(() => a.proposeCard({ kind: 'next_step', title: '去拍板', refs: [dRef], project_id: projectId, thread_id: 't_nope' }), /没有这个线程/)
   assert.throws(() => a.proposeCard({ kind: 'next_step', title: '去拍板', refs: [dRef], actions: [{ id: 'handoff' }], project_id: projectId }), /handoff 需要 text/)
-  // The board lists a task waiting on a decision by itself: a board card for it is refused, an interrupt still goes.
-  assert.throws(() => a.proposeCard({ kind: 'next_step', title: '先拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef] }), /已经在「待你决定」里了/)
+  // The board lists a task waiting on a decision by itself: a board card for it is refused, and so is a desktop
+  // reminder until the task has waited half a day.
+  assert.throws(() => a.proposeCard({ kind: 'next_step', title: '先拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef] }), /已经在「待你决定」里了.*不要换一个 level 重递/)
+  assert.throws(() => a.proposeCard({ kind: 'next_step', title: '先拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef], level: 'interrupt' }), /还不到半天/)
+  assert.equal(env.hub().cardOrder.length, 0, 'neither refusal left a card')
+  project.threads.get(threadId).updatedAt -= 13 * 60 * 60_000
   const { cardId } = a.proposeCard({
     kind: 'next_step', title: '先拍板回顾接口', body: '工程师在等你选自然日还是 24 小时。', project_id: projectId, thread_id: threadId, refs: [dRef], level: 'interrupt',
     actions: [{ id: 'handoff', text: '按自然日做，跨时区先不管' }],
@@ -227,14 +231,35 @@ test('recap, memory and cards need cross-project refs; the board and the dock sh
   const view = todayView(env.store, env.hubStore)
   assert.equal(view.recap.morning.headline, '今天先拍板回顾接口')
   assert.equal(view.recap.latest.sections.tomorrow[0].refs.length, 0)
-  assert.equal(view.cards.filter(c => c.state === 'open').length, 4)
+  // The reminder about the waiting task is not a second card on the board: the board lists that task itself.
+  assert.equal(view.cards.filter(c => c.state === 'open').length, 3)
+  assert.equal(view.cards.some(c => c.id === twin.cardId), false)
   const snap = snapshot(env.store, env.driver, undefined, env.hubStore)
   const hubCard = snap.dock.cards.find(c => c.id === twin.cardId)
   assert.equal(hubCard.projectId, HUB_ID)
   assert.equal(hubCard.jumpProjectId, projectId)
   assert.equal(snap.dock.headline.headline, '今天先拍板回顾接口')
   assert.equal(snap.dock.waiting.length, 1)
+  // Once the task is closed the reminder is gone from the dock too, though nobody withdrew it.
+  project.threads.get(threadId).resolved = true
+  assert.equal(snapshot(env.store, env.driver, undefined, env.hubStore).dock.cards.some(c => c.id === twin.cardId), false)
+  assert.equal(env.hub().cards.get(twin.cardId).state, 'open')
   await settle([env.driver, env.hubDriver])
+})
+
+test('a card about one task has nothing to add once the board lists that task, or the task is closed', () => {
+  const thread = { state: 'working', resolved: false }
+  const projects = new Map([['p_1', { threads: new Map([['t_1', thread]]) }]])
+  const card = { target: { projectId: 'p_1', threadId: 't_1' } }
+  assert.equal(cardCovered(card, projects), null, 'a running task: the card stands')
+  for (const state of ['blocked', 'review_ready', 'failed']) { thread.state = state; assert.equal(cardCovered(card, projects), 'listed') }
+  thread.state = 'done'
+  assert.equal(cardCovered(card, projects), 'closed')
+  thread.state = 'review_ready'; thread.resolved = true
+  assert.equal(cardCovered(card, projects), 'closed', 'archived while waiting')
+  assert.equal(cardCovered({ target: { projectId: 'p_1', threadId: null } }, projects), null, 'a card about a project stands')
+  assert.equal(cardCovered({ target: { projectId: 'p_gone', threadId: 't_1' } }, projects), null)
+  assert.equal(cardCovered({}, projects), null)
 })
 
 test('交给项目 posts under the owner name in the project chat and wakes the coordinator', async () => {
@@ -334,6 +359,9 @@ test('one morning and one evening recap a day across projects; the per-project m
   const env = setup(async () => {}, { now: Math.max(today.getTime(), Date.now() + 120_000) })
   aDay(env)
   aDay(env, '第二个项目')
+  // The first day of use has no yesterday to look back on: no morning recap, however much has happened since.
+  assert.equal(env.service.maybeMorning(), false)
+  env.hub().events[0].at -= 24 * 60 * 60_000
   assert.equal(env.service.maybeMorning(), true)
   assert.equal(env.service.maybeMorning(), false)
   assert.equal(env.service.maybeEvening(), true)
@@ -356,6 +384,7 @@ test('a daily check that cannot write (a full disk) stays inside the timer, and 
   const env = setup(async () => {}, { now: Math.max(today.getTime(), Date.now() + 120_000) })
   aDay(env)
   aDay(env, '第二个项目')
+  env.hub().events[0].at -= 24 * 60 * 60_000 // in use since yesterday; the first day has no morning recap
   const file = join(env.dir, '_hub', HUB_ID, 'events.jsonl'), tick = 10 * 60_000
   const requests = () => env.hub().events.filter(e => e.type === 'mira.requested').map(e => e.reason)
   // What a full disk does to the assistant's log: every write throws.

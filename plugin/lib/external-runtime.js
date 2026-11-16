@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
+import { defaultFolder } from './folders.js'
 
 export const EXTERNAL_PROVIDERS = ['claude', 'codex']
 export const RUNTIME_LABELS = { dsh: 'DSH', claude: 'Claude Code', codex: 'Codex' }
@@ -270,8 +271,21 @@ export class ExternalRuntime {
     const takeoverCommand = commandFor(binding.runtime, externalSessionId, cwd, this.profiles[binding.runtime], bridge, this.executables[binding.runtime])
     this.store.append(project.id, {
       type: 'runtime.session', key, sessionId: binding.sessionId, runtime: binding.runtime,
-      externalSessionId, takeoverCommand,
+      externalSessionId, takeoverCommand, cwd,
     })
+  }
+
+  /**
+   * Where this task's outside session works. A session that already exists stays in the folder it started in: Claude
+   * Code and Codex both tie a session to its folder. A new one starts in the project's work folder. Without a folder
+   * of the project's own that used to be the project's data directory, where the project's log is.
+   */
+  folderFor(project, key, binding) {
+    const fixed = project.threads.get(key.slice(2))?.workspace?.cwd ?? project.cwd
+    if (fixed) return fixed
+    if (!binding?.externalSessionId) return defaultFolder(this.store, project)
+    const started = project.events.findLast(e => e.type === 'runtime.session' && e.key === key && e.externalSessionId === binding.externalSessionId)
+    return started?.cwd ?? join(this.store.root, project.id)
   }
 
   /** The runner got going this turn (it printed more than a bare verdict), so a failure from here on is not a failed resume. */
@@ -408,7 +422,7 @@ export class ExternalRuntime {
     if (this.stopped) throw new Error('外部 runtime 已停止')
     const { binding, continuity, returning } = this.ensure(project, key)
     const thread = project.threads.get(key.slice(2))
-    const cwd = thread?.workspace?.cwd ?? project.cwd ?? join(this.store.root, project.id)
+    const cwd = this.folderFor(project, key, binding)
     mkdirSync(cwd, { recursive: true })
     const turn = { projectId: project.id, key, platform: false, replied: false, readThrough: 0 }
     this.driver.turns.set(binding.sessionId, turn)
@@ -460,7 +474,7 @@ export class ExternalRuntime {
     const binding = project.sessions.get(key)
     if (!binding || !EXTERNAL_PROVIDERS.includes(binding.runtime) || !binding.externalSessionId) throw new Error('这个任务还没有可以接着做的 Claude Code / Codex 会话')
     const thread = project.threads.get(key.slice(2))
-    const cwd = thread?.workspace?.cwd ?? project.cwd ?? join(this.store.root, project.id)
+    const cwd = this.folderFor(project, key, binding)
     const bridge = await this.bridgeFor(project, key, binding)
     return {
       provider: binding.runtime, label: RUNTIME_LABELS[binding.runtime],

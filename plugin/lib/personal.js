@@ -220,6 +220,12 @@ export class PersonalMira {
   reply({ text, refs = [], replyTo }, sessionId) {
     const body = required(text, '回复'), original = this.hub.messages.get(replyTo)
     if (!original || original.author?.kind !== 'human' || original.trust !== 'principal') throw new Error('回复必须指向个人对话里的用户消息')
+    // Words typed in the assistant's own session are answered there, in text. A later wake used to answer them again
+    // through this tool (fresh-install check run, 2026-11-16). A retry the owner asks for still gets its answer.
+    const answered = original.native === true ? this.hub.events.findLast(e => e.type === 'message.posted' && e.author?.kind === 'assistant' && e.replyTo === replyTo) : undefined
+    if (answered && !this.hub.events.some(e => e.seq > answered.seq && e.type === 'mira.requested' && e.reason === 'conversation' && e.replyTo === replyTo)) {
+      throw new Error('这条消息是他直接在你的会话里打的，你当时已经回答过了，不要再答一遍。没有新的事要告诉他，就调用 hub_no_reply 结束这一轮')
+    }
     if (/\b(?:p_[\w-]+|hub)#[1-9]\d*/.test(body)) throw new Error('来源编号放在refs数组中，正文用项目名和易读说明；界面会生成来源按钮')
     const sources = this.validateRefs(refs)
     const provided = new Set(this.hub.events.filter(e => e.type === 'personal.evidence.provided' && e.sessionId === sessionId).flatMap(e => e.refs))
@@ -230,21 +236,22 @@ export class PersonalMira {
     return { ok: true, messageId: event.messageId }
   }
 
-  handoff({ requestId, projectId, messageId, text, refs = [] }) {
+  handoff({ requestId, projectId, messageId, text, refs = [], note, typed = false }) {
     const key = requestKey(requestId), project = this.projects.projects.get(projectId), original = this.hub.messages.get(messageId)
     if (!project || project.hub) throw new Error('没有目标项目')
     if (!original || original.author?.kind !== 'human' || original.trust !== 'principal') throw new Error('只能转交个人对话中用户写下的需求')
     const body = required(text ?? original.text, '交给项目的需求'), sources = this.validateRefs(refs)
-    const fingerprint = digest({ projectId, messageId, text: body, refs: sources.map(s => s.ref) })
+    const extra = typeof note === 'string' && note.trim() !== '' ? note.trim().slice(0, 600) : undefined
+    const fingerprint = digest({ projectId, messageId, text: body, refs: sources.map(s => s.ref), ...(extra ? { note: extra } : {}) })
     const id = 'handoff_' + digest(key).slice(0, 32)
     const intent = this.hub.events.find(e => e.type === 'personal.handoff.requested' && e.handoffId === id)
     if (intent && intent.fingerprint !== fingerprint) throw new Error('同一交接请求的重试内容不一致')
     if (!intent) this.hubStore.append(HUB_ID, { type: 'personal.handoff.requested', handoffId: id, requestId: key, fingerprint,
-      projectRef: projectId, sourceMessageId: messageId, text: body, refs: sources.map(s => s.ref) })
+      projectRef: projectId, sourceMessageId: messageId, text: body, refs: sources.map(s => s.ref), ...(extra ? { note: extra } : {}) })
     let target = project.events.find(e => e.type === 'message.posted' && e.handoff?.id === id)
     if (!target) {
-      const result = this.projectActions.ownerPost({ projectId, text: body }, { handoff: { id, sourceMessageId: messageId,
-        sourceRef: `hub#${original.seq}`, sourceText: original.text, context: sources } })
+      const result = this.projectActions.ownerPost({ projectId, text: body, ...(typed ? { typed: body } : {}) }, { handoff: { id, sourceMessageId: messageId,
+        sourceRef: `hub#${original.seq}`, sourceText: original.text, context: sources, ...(extra ? { note: extra } : {}) } })
       target = project.events.find(e => e.messageId === result.messageId)
     } else this.projectActions.driver.deliver(target, 'personal-handoff')
     let receipt = this.hub.events.find(e => e.type === 'personal.handoff.completed' && e.handoffId === id)
@@ -314,13 +321,23 @@ export class PersonalMira {
     return this.recordAction({ kind: 'decision', text: `回复了「${thread.title}」的拍板：${decision.options[chosen].label}`, sub: `${project.name} · ${decision.question}`, projectId, threadId, messageId })
   }
 
-  openTask({ projectId, text, messageId, refs = [] }) {
-    messageId = this.ownerWords(messageId).id
+  /**
+   * The assistant passes one of the owner's requests on to a project. What lands there under the owner's name is the
+   * owner's own words, checked to stand in their message word for word. Anything the assistant adds travels beside them
+   * as its note, never as the owner's instruction. (Fresh-install run, 2026-11-16: the assistant's rewrite added
+   * requirements the owner never stated, was logged as theirs, and the task took 11.6 minutes instead of 99 seconds.)
+   */
+  openTask({ projectId, quote, note, text, messageId, refs = [] }) {
+    const original = this.ownerWords(messageId)
+    messageId = original.id
     const project = this.projects.projects.get(projectId)
     if (!project || project.hub) throw new Error('没有这个项目')
-    const body = required(text, '任务说明')
-    const result = this.handoff({ requestId: 'mira-open-' + digest({ projectId, messageId, body }).slice(0, 40), projectId, messageId, text: body, refs })
-    this.recordAction({ kind: 'open', text: `把这件事交给了「${project.name}」`, sub: '项目助理会开成任务；资料只作参考，不算你的指令', projectId, messageId })
+    const own = typeof original.typed === 'string' && original.typed !== '' ? original.typed : original.text
+    const said = [quote, text].map(value => typeof value === 'string' ? value.trim() : '').find(value => value !== '' && own.includes(value))
+    if (said === undefined) throw new Error('quote 要填他那条消息里关于这件事的原话，一字不差（平台会核对）：送进项目的就是这句原话，不改写、不扩写。读懂它必需的背景放 note')
+    const extra = typeof note === 'string' && note.trim() !== '' ? note.trim().slice(0, 600) : undefined
+    const result = this.handoff({ requestId: 'mira-open-' + digest({ projectId, messageId, body: said, ...(extra ? { note: extra } : {}) }).slice(0, 40), projectId, messageId, text: said, refs, note: extra, typed: true })
+    this.recordAction({ kind: 'open', text: `把这件事交给了「${project.name}」`, sub: extra ? `助理补充：${extra}` : '项目助理会开成任务；资料只作参考，不算你的指令', projectId, messageId })
     return result
   }
 

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawn } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ProjectStore, workerKey } from '../lib/store.js'
@@ -9,7 +9,9 @@ import { Driver } from '../lib/driver.js'
 import { Actions } from '../lib/actions.js'
 import { createTools } from '../lib/tools.js'
 import { ExternalRuntime, runnerEnv } from '../lib/external-runtime.js'
+import { defaultFolder } from '../lib/folders.js'
 import { handoffLine, renderItem } from '../lib/protocol.js'
+import { ownerWords } from '../lib/auto-memory.js'
 import { workspaceChanges } from '../lib/worktrees.js'
 import { snapshot } from '../lib/http.js'
 
@@ -29,7 +31,7 @@ const server = JSON.parse(readFileSync(args[args.indexOf('--mcp-config') + 1], '
 const lines = createInterface({ input: process.stdin, crlfDelay: Infinity })
 lines.once('line', line => {
   lines.close()
-  appendFileSync(process.env.FAKE_LOG, JSON.stringify({ args, resume, prompt: JSON.parse(line).message.content[0].text, env: Object.keys(process.env) }) + '\n')
+  appendFileSync(process.env.FAKE_LOG, JSON.stringify({ args, resume, cwd: process.cwd(), prompt: JSON.parse(line).message.content[0].text, env: Object.keys(process.env) }) + '\n')
   run().catch(error => { console.error(error);process.exit(1) })
 })
 async function run() {
@@ -357,6 +359,13 @@ test('words typed into a task\'s old DSH session go to whoever runs the task now
   assert.equal(posted.type, 'message.posted')
   assert.equal(posted.author.kind, 'human')
   assert.deepEqual(posted.to, [f.key], 'it wakes the task\'s executor')
+  // E2E #28: these are the owner's own typed words. Memory and the night review read them through ownerWords().
+  assert.equal(posted.typed, '把第一问改短')
+  assert.ok(ownerWords(f.project).some(w => w.text === '把第一问改短' && w.threadId === f.threadId), 'the owner\'s words to the new executor count as their own')
+  // A line posted in the owner's name that they did not type carries no `typed` and stays out.
+  f.actions.ownerPost({ projectId: f.projectId, text: '附上共享文件：a.md' })
+  assert.equal(f.project.events.at(-1).typed, undefined)
+  assert.ok(!ownerWords(f.project).some(w => w.text.includes('附上共享文件')))
   await f.turn()
   assert.match(f.inboxes().at(-1), /把第一问改短/, 'Claude Code reads it')
 
@@ -370,4 +379,27 @@ test('words typed into a task\'s old DSH session go to whoever runs the task now
   await f.turn()
   assert.equal(f.project.sessions.get(f.key).sessionId, dshSession)
   assert.equal(f.actions.redirectTyped({ sessionId: dshSession, text: '你接着做' }), null)
+})
+
+test('an outside runner of a project without a folder works apart from the project\'s log, and a session stays in the folder it started in', async t => {
+  const f = setup(t)
+  await f.turn()
+  f.actions.setTaskRunner({ projectId: f.projectId, threadId: f.threadId, provider: 'claude' })
+  await f.turn()
+  const folder = defaultFolder(f.store, f.project), data = join(f.store.root, f.projectId)
+  assert.equal(folder, join(f.store.root, '_folders', f.projectId, '换执行者'))
+  assert.equal(realpathSync(f.starts().at(-1).cwd), realpathSync(folder))
+  assert.equal(existsSync(join(data, 'events.jsonl')), true)
+  assert.equal(existsSync(join(folder, 'events.jsonl')) || existsSync(join(folder, '..', 'events.jsonl')), false, 'the log is neither in the work folder nor next to it')
+  const noted = f.project.events.findLast(e => e.type === 'runtime.session')
+  assert.equal(noted.cwd, folder, 'the session records where it started')
+  assert.match(f.project.sessions.get(f.key).takeoverCommand, new RegExp('^cd .*_folders'))
+  // The same session again: same folder.
+  await f.turn('再看一眼')
+  assert.equal(realpathSync(f.starts().at(-1).cwd), realpathSync(folder))
+  // A session started before folders were recorded was started in the data directory, and resumes there.
+  delete noted.cwd
+  await f.turn('接着做')
+  assert.equal(f.starts().at(-1).resume, 'native-claude-1')
+  assert.equal(realpathSync(f.starts().at(-1).cwd), realpathSync(data))
 })

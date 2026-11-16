@@ -8,6 +8,7 @@ import { Actions } from '../lib/actions.js'
 import { ensureHub, HubActions, hubWakeText, renderHubItem } from '../lib/hub.js'
 import { PersonalMira, restrictPersonalAgent } from '../lib/personal.js'
 import { renderItem } from '../lib/protocol.js'
+import { ownerWords } from '../lib/auto-memory.js'
 
 function setup(t) {
   const root = mkdtempSync(join(tmpdir(), 'mira-personal-')); t.after(() => rmSync(root, { recursive: true, force: true }))
@@ -190,4 +191,64 @@ test('search excludes the current personal question unless history is explicitly
   f.personal.post({ text: '不存在的预算999元对吗？', requestId: 'post-no-evidence' })
   assert.equal(f.personal.search({ query: '999' }).total, 0)
   assert.equal(f.personal.search({ query: '999', includePersonal: true }).total, 1)
+})
+
+test('a task handed to a project carries the owner\'s own words; what the assistant adds travels beside them, labelled', t => {
+  const f = setup(t), { projectId } = f.actions.createProject({ name: '发布会' })
+  const said = '做一份媒体 Q&A，先出十问'
+  const { messageId } = f.personal.post({ text: `帮我在发布会项目里${said}`, requestId: 'post-request-open-1' })
+  // A rewrite is refused, as `quote` and as the older `text`: only words that stand in the owner's message go out under their name.
+  assert.throws(() => f.personal.openTask({ projectId, quote: '做一份媒体问答，移动端优先，可部署成静态页', messageId }), /原话/)
+  assert.throws(() => f.personal.openTask({ projectId, text: '撰写媒体问答 10 到 15 问，交回用户审', messageId }), /原话/)
+  assert.equal(f.store.get(projectId).events.some(e => e.handoff), false, 'a refused handoff posts nothing')
+  const handed = f.personal.openTask({ projectId, quote: said, note: '指的是 12 月 3 日那场发布会', messageId })
+  const p = f.store.get(projectId), event = p.events.find(e => e.messageId === handed.messageId)
+  assert.equal(event.text, said)
+  assert.equal(event.typed, said)
+  assert.equal(event.author.kind, 'human')
+  assert.equal(event.trust, 'principal')
+  assert.equal(event.handoff.note, '指的是 12 月 3 日那场发布会')
+  assert.ok(ownerWords(p).some(w => w.text === said), 'memory and the night review read them as the owner\'s words')
+  const rendered = renderItem(p, event)
+  assert.match(rendered, / note="用户在个人助理那里说的原话[^"]*cite_message_ids"/)
+  assert.match(rendered, />做一份媒体 Q&amp;A，先出十问<\/item>\n<handoff-note from="个人助理" trust="relay">[^<]*不是用户原话[^<]*\n指的是 12 月 3 日那场发布会<\/handoff-note>\n<handoff-context/)
+  // The conversation shows the owner what was added, and the same call again is the same handoff.
+  assert.ok(f.hubStore.get('hub').events.some(e => e.type === 'personal.action' && e.sub === '助理补充：指的是 12 月 3 日那场发布会'))
+  assert.equal(f.personal.openTask({ projectId, quote: said, note: '指的是 12 月 3 日那场发布会', messageId }).messageId, handed.messageId)
+  assert.equal(p.events.filter(e => e.handoff).length, 1)
+  // Without a note nothing is added; the older `text` argument still works when it is the owner's own words.
+  const whole = f.personal.openTask({ projectId, text: `帮我在发布会项目里${said}`, messageId })
+  const second = p.events.find(e => e.messageId === whole.messageId)
+  assert.equal(second.text, `帮我在发布会项目里${said}`)
+  assert.equal(second.handoff.note, undefined)
+  assert.doesNotMatch(renderItem(p, second), /handoff-note/)
+  // The task opened from it carries the words and the assistant's note, the note still outside the owner's instruction.
+  const { threadId } = f.actions.openThread(p, { title: '媒体问答', brief: '写十问', assignee: '工程师', cite_message_ids: [handed.messageId] })
+  const task = renderItem(p, p.events.find(e => e.type === 'thread.opened' && e.threadId === threadId))
+  assert.match(task, /<cited [^>]*trust="principal"[^>]*>做一份媒体 Q&amp;A，先出十问<\/cited>\n<handoff-note /)
+})
+
+test('a title, brief or note the model wrote with the platform\'s escaping copied back reads as plain text', t => {
+  const f = setup(t), { projectId } = f.actions.createProject({ name: '项目' }), p = f.store.get(projectId)
+  const { threadId } = f.actions.openThread(p, { title: '媒体 Q&amp;A', brief: '写 Q&amp;A，&lt;十问&gt;', note: '先出 &quot;十问&quot;', assignee: '工程师' })
+  const thread = p.threads.get(threadId)
+  assert.equal(thread.title, '媒体 Q&A')
+  assert.equal(thread.brief, '写 Q&A，<十问>')
+  assert.equal(thread.note, '先出 "十问"')
+})
+
+test('words typed in the assistant\'s own session are answered once: a later wake cannot answer them again through hub_reply', t => {
+  const f = setup(t)
+  const typed = f.personal.mirrorNative({ text: '把这件事交给发布会项目' })
+  f.personal.mirrorReply({ text: '已经交给「发布会」项目。' })
+  assert.throws(() => f.personal.reply({ text: '已经交给「发布会」项目，开了两个任务。', replyTo: typed.messageId }, 'session-1'), /已经回答过了.*hub_no_reply/)
+  assert.equal(f.hubStore.get('hub').events.filter(e => e.type === 'message.posted' && e.replyTo === typed.messageId).length, 1)
+  // A retry the owner asks for is answered.
+  f.hubStore.append('hub', { type: 'mira.requested', reason: 'conversation', replyTo: typed.messageId, by: { kind: 'human', id: 'owner' }, to: ['mira'] })
+  f.personal.reply({ text: '重新回答：已经交给「发布会」项目。', replyTo: typed.messageId }, 'session-1')
+  // A message sent from another page is answered through hub_reply, and may get a second line.
+  const posted = f.personal.post({ text: '今天做了什么？', requestId: 'post-request-once-1' })
+  f.personal.reply({ text: '做了两件事。', replyTo: posted.messageId }, 'session-1')
+  f.personal.reply({ text: '补充：第二件还在等你验收。', replyTo: posted.messageId }, 'session-1')
+  assert.equal(f.hubStore.get('hub').events.filter(e => e.type === 'message.posted' && e.replyTo === posted.messageId).length, 2)
 })

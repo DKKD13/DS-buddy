@@ -86,6 +86,18 @@ function threadRow(project, t) {
  * @param {any} [hub] - the hub project (hub.js), for the computer context, recaps, cards and memory.
  * @param {{ day?: string, now?: number, status?: (projectId: string, key: string) => string }} [options]
  */
+/**
+ * Why an assistant's card about one task has nothing left to say: the task is closed ('closed'), or 待你决定 already
+ * lists the task itself ('listed'). null when the card still stands on its own.
+ * @param {Map<string, any>} projects
+ */
+export function cardCovered(card, projects) {
+  const thread = card.target?.threadId ? projects.get(card.target.projectId)?.threads.get(card.target.threadId) : undefined
+  if (thread === undefined) return null
+  if (thread.resolved === true || thread.state === 'done') return 'closed'
+  return ['blocked', 'review_ready', 'failed'].includes(thread.state) ? 'listed' : null
+}
+
 export function buildDay(store, hub, { day, now = Date.now(), status, execution } = {}) {
   const { day: key, start, end } = dayBounds(day, now)
   const isToday = key === dayKey(now)
@@ -199,7 +211,9 @@ export function buildDay(store, hub, { day, now = Date.now(), status, execution 
   projects.sort((a, b) => (b.lastAt ?? 0) - (a.lastAt ?? 0))
 
   const recaps = (hub?.recaps ?? []).filter(r => r.day === key)
-  const cards = hub === undefined ? [] : hub.cardOrder.map(id => hub.cards.get(id)).filter(c => c.state === 'open' || inDay(c.at)).reverse()
+  // An open card whose task the board already lists, or whose task is closed, would be a second copy of that task
+  // (fresh-install run, 2026-11-16: a 「请验收」 card stayed next to the task, and stayed after the task was accepted).
+  const cards = hub === undefined ? [] : hub.cardOrder.map(id => hub.cards.get(id)).filter(c => c.state === 'open' ? cardCovered(c, store.projects) === null : inDay(c.at)).reverse()
   return {
     day: key, isToday, start, end, now,
     totals, waiting, projects, timeline,

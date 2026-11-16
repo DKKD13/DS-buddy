@@ -20,16 +20,13 @@ import { COORDINATOR, MIRA, workerKey } from './store.js'
 import { continuityNotice, NUDGE, rolePrompt, UNANSWERED, wakeText } from './protocol.js'
 import { ThreadWorkspaces } from './worktrees.js'
 import { RETURN_NOTICE } from './external-runtime.js'
+import { defaultFolder, folderName } from './folders.js'
 
 const DEBOUNCE_MS = 250
 const MAX_ROUNDS = 6
 const CHILDREN_TTL_MS = 8_000
 
-/** A folder name for the project's default workspace; its last segment is the sidebar title. */
-export function folderName(project) {
-  const name = (project.initialName ?? project.name).replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim().slice(0, 60)
-  return name === '' || name === '.' || name === '..' ? project.id : name
-}
+export { defaultFolder, folderName }
 
 export class Driver {
   /**
@@ -245,14 +242,14 @@ export class Driver {
   /**
    * The DSH Workspace that holds a project's sessions, so they group under the
    * project in the sidebar: the project's own folder when it has one, otherwise
-   * a folder named after the project in its data directory.
+   * a folder named after the project, apart from the project's log (folders.js).
    * @returns the Workspace id, or undefined when no registry is available.
    */
   async workspaceFor(project, thread) {
     const registry = this.ctx.get('workspaceRegistry')
     if (registry === undefined) return undefined
     try {
-      const path = thread?.workspace?.cwd ?? project.cwd ?? join(this.store.root, project.id, folderName(project))
+      const path = thread?.workspace?.cwd ?? project.cwd ?? defaultFolder(this.store, project)
       if (project.cwd === undefined) mkdirSync(path, { recursive: true })
       return (await registry.create(path, thread?.workspace ? `${project.name} · ${thread.title}` : project.name)).id
     } catch (error) {
