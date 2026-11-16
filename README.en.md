@@ -1,78 +1,48 @@
-![A DS-buddy task page: the executor's result on the left, the job's context on the right](docs/site/blog/img/hero.jpg)
+![The DS-buddy timeline: what you did on the computer, each entry with the apps it used and the project it belongs to](docs/site/blog/img/hero-timeline.jpg)
 
-# DS-buddy
+# DS-buddy: your next agent product may not need agents
 
 **Exploring the best way for people and AI to work together.**
 
 [Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/) · [Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) · [Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
 
-## Your next agent product may not need agents
+Agents keep getting more capable, and our own efficiency hasn't kept up. We run back and forth between several conversations, carrying context around, acting as the glue, with little time left to think the direction through.
 
-Over the past six months, my strongest impression has been that agents keep getting more capable. On one hand I am amazed at how far AI has come; on the other, my own efficiency has improved only a little, and I often find myself running between several conversations.
+The problem isn't that AI isn't smart enough. It's that the bandwidth between people and AI is too narrow. Context has to reach the AI, without using up people's attention to get it there.
 
-The most central and urgent problem for AI applications today is lowering the bandwidth of communication between people and AI. On one hand, we need a good way to hand context to the AI; on the other, people shouldn't have to spend more of their attention to do it.
+Many agent products answer with more agents: assign roles, hold meetings, pass messages to each other.
 
-The dilemma we keep facing is that we are run off our feet, playing the role of glue most of the time, carrying context around, and short of real time to think and set the right direction.
+We see it differently.
 
-Agent products today are built by carrying the experience of organising people over to AI. They hope to open more and more agents, without considering that so-called multi-agent collaboration then degrades into "several roles that can talk". It looks like collaboration, but at heart it is still a simulation of a human meeting room.
+**Most of the time, you don't need multiple agents.** Managing agents is, at heart, managing context. A fork shares: the new branch is born with the main conversation's full context. Multiple agents pass things on: compress, retell, understand again, and every extra layer loses a little more. Messages passed between people get garbled, and so do messages between agents. Meeting-room multi-agent looks like collaboration, but it only moves the human way of organising onto models.
 
-So before talking about multi-agent, we have to start with one question.
+A fork alone isn't enough either. Context that grows naturally in a conversation gets dirtier: small talk, stale conclusions and the noise of work in progress all stay in and keep using up the model's attention. Compression alone can't save it.
 
-### Do we really need that many agents?
+**Context should be designed from the start.** AI needs a clear goal and acceptance criteria, so DS-buddy organises work around the goal, that is, the loop. You only need to make three things clear: what to do, where the context is, and what the standard is. The AI breaks that into tasks, and each task has its own context pack, which you can think of as a goal file. That file is what really needs maintaining over time: injected each time, updated each time. A task worth handing over doesn't have to be big, but it has to be complete and deliverable on its own.
 
-**Fork vs subagent: managing agents is, at heart, managing context.**
+The agents that do the work are just tools. Their state is fragile; they are thrown away after use and injected again next time. Add automated tasks that run again on a schedule, and your task loops keep turning by themselves.
 
-When do you need a fork, and when do you need multiple agents? The answer is that most of the time we don't need multiple agents.
+**Hide the details, show the progress.** Multica and Raft organise agents through group chats and tickets, their underlying abstractions are well made, and we borrowed from their thinking. But setting up channels, configuring roles and dividing up the work is a burden for people in itself. How the context is assembled, at which layer the cache hits, how tokens are saved: that is all under the hood. Hiding it well also pays off: with the stable part at the front, the model can reuse what it read last time, and a cache hit and a cache miss differ in cost by an order of magnitude.
 
-A fork shares: the new branch is born with the context of the main conversation. Multi-agent passes things on: compress, retell, understand again, and every extra layer of passing loses a little more. Just as messages passed between people pick up errors, multiple agents pick up errors too, and they add a communication cost we don't need.
-
-But a fork alone isn't enough: the main conversation keeps swelling. Context that grows by itself in a conversation tends to get worse and worse: small talk, stale conclusions and the noise of work in progress all stay in and keep using up the model's attention, and compression alone can't fix that.
-
-Managing agents is, at heart, managing context. In a meeting-room style of multi-agent, each agent adds opinions from the point of view of a human job, but the task itself is never organised into a structure that can be delivered, verified and put together. That only moves the human form of organisation onto models, instead of designing the system around what agents can and can't do.
-
-### The answer: context management built around the goal (the loop)
-
-**Runtimes and sessions are only temporary tools; a vague goal is broken down into AI tasks that can close their own loop.**
-
-AI needs a clear goal and acceptance criteria. For every core thread, the way of working has turned towards the goal, that is, the loop. So the best answer for context has to be designed consciously from the start, rather than refined as the conversation goes on. A task that is really fit to hand to another agent should be like a complete sub-problem that can be delivered on its own. It doesn't have to be big, but it has to be complete. DS-buddy deliberately has an agent maintain the organisation of each task, and offers automated tasks (tasks that run again on a schedule) to help you build your own task loops smoothly.
-
-For each task, the problem with today's sessions is that most of the valuable context gets buried in the moving conversation. Yet the fixed index of a task is simple. It is usually a clear goal, where the repository is, the acceptance standard, and where the documents are.
-
-So people only need to say three things clearly: what to do, where the context is, and what the standard is. The AI then breaks that down into a context pack for each task (thread). Think of the pack roughly as a goal file. It is what we really maintain over time, injected each time and updated each time.
-
-As for the execution, the temporary agents are really tools. Their state is fragile; each is just a runtime, and the context is injected again each time. They hardly need maintaining.
-
-### Hide the configuration details: trust the model, offer a board instead of forms, leave the rest to the AI
-
-Similar multi-agent products on the market today all expose too much. Multica and Raft offer a good way to organise, through group chats and tickets being passed along, and their underlying abstractions are well made; I borrowed their thinking and the way they are built. But for a person, setting up channels, configuring roles and dividing up the work is hard work in itself.
-
-The details need wrapping. How the context is assembled, at which layer the cache hits, how tokens are saved: all of this is under the hood and shouldn't be put in front of the user. Wrapping it well also pays off: with the stable part at the front, the model can reuse what it read last time, and a cache hit and a cache miss differ in cost by an order of magnitude.
-
-So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible: every task has a page of details, and whatever needs you is on one board called Waiting on you.
+So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible. Every task has a page of details, and whatever needs your call is on one board called Waiting on you.
 
 ![The Waiting on you board: tasks and reminders waiting on you, and a task in progress](docs/site/blog/img/shot-board-banner.jpg)
 
-### Collecting context fully
+**It understands before you speak.** For AI to take over carrying context, it first has to see enough of it. What you are doing on screen and the messages in Feishu keep coming in and are organised into a timeline every 10 minutes. Files on your computer are read when needed. All of it is read-only and can be turned off at any time.
 
-**Freeing people from carrying information around, towards an always-on AI that really understands you.**
+![Asking Tacit about a line from an interview: it finds the source in what the screen recorded; on the right, the read-only source settings](docs/site/blog/img/recall-banner.jpg)
 
-For an AI to take over this layer, it first needs to take in enough of your context. That brings in our most important design: collecting context. What you do on screen and the messages in Feishu come in continuously and are organised into a timeline every 10 minutes; files on your computer are read when needed. All of it is read-only and can be turned off at any time.
+Collecting context automatically isn't new: Screenpipe, AirJelly, Littlebird and the Computer History built into Codex have been doing it for a while. But most of them stop at collecting context and never get to action.
 
-![The computer timeline, with the read-only source settings: Feishu and computer files can be paused or limited](docs/site/blog/img/shot-collect-banner.jpg)
+The core assistant in DS-buddy is called Tacit by default, meaning tacit understanding. A good buddy doesn't need you to spell everything out.
 
-Capturing context automatically isn't new. Screenpipe is the best-known example, along with AirJelly, Littlebird and the Computer History built into Codex, and they have existed for a while. But most of them haven't closed the loop from context to action.
+**A small suggestion: use the strongest model to split the work.** The most important link right now is the coordinator, the assistant that splits the work, and whether it gets the division and the size of tasks right. We recommend a strong model such as Claude Opus 5.5 or GPT-6 Astra for the personal assistant. As models get stronger and the skills for dividing work get refined, this keeps getting better.
 
-I think this is how we will work in future: people express preferences and values and give the key guidance only at the points where they are really needed, instead of being reduced, as today, to carriers of information whose attention suffers. That lets people focus on what really matters.
-
-The core assistant in DS-buddy is called Tacit by default, meaning tacit understanding. I think a really good buddy should know all the relevant context before you open your mouth.
-
-### The biggest challenge: breaking work down well
-
-The biggest problem today is whether the coordinator, the assistant that splits the work, can plan the division and the size of tasks soundly. So we recommend a strong model such as Claude Opus 5.5 or GPT-6 Astra for the personal assistant, the one that sets things up for you, to split tasks as well as possible. As models get smarter and the skills for dividing work get refined, this keeps getting better.
-
-Come and try it.
+People express preferences and give direction only where it matters, instead of carrying information around. The rest goes to the AI.
 
 DS-buddy: your next agent product may not need agents.
+
+Give it a try.
 
 ## Install
 
