@@ -258,7 +258,7 @@ It is the loop DS-buddy wants to close. The timeline goes into the context layer
 
 I think this is how we will work: people speak only where they are really needed, to state a preference, make a trade-off, give the one piece of direction that matters, and stop being carriers of information.
 
-Once things run in parallel, the hard part is keeping track. Waiting on you is one board across projects that lists only what needs you: decisions, acceptances, failures, and messages someone is waiting for you to answer.
+Once things run in parallel, the hard part is keeping track. Waiting on you is one board across projects with three lanes: waiting on you, in progress, done today. The first holds what needs you: decisions, acceptances, failures, and messages someone is waiting for you to answer.
 
 ![Waiting on you: clicking a reminder card drafts the reply in the composer](img/film-board.jpg "Someone in a group is waiting for your reply, and it noted that first. One click and the reply is drafted.")
 

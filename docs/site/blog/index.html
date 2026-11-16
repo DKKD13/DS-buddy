@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>一个真正好的 agent 产品，不需要 agent 这层抽象 | DS-buddy</title>
-<meta name="description" content="DS-buddy 今天开源。这是我做它时想明白的一件事。">
+<meta name="description" content="DS-buddy 今天开源。这篇文章记录做它的过程里，我对多 agent 的看法是怎么变的，包括走错的地方。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <script>try{var t=localStorage.getItem("tacit-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 </head>
 <body>
-<div class="page notoc">
+<div class="page">
 <aside class="side">
   <a class="brand" href="./"><span>DS-buddy</span></a>
   <nav><a class="on" href="./">短文</a><a href="deep/">长文</a><a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
@@ -29,30 +29,46 @@
       <p class="kick">我的 AI 产品实践</p>
       <h1>一个真正好的 agent 产品，不需要 agent 这层抽象</h1>
       <p class="meta">DS-buddy <i>·</i> 2026/11/16</p>
-      <p class="dek">DS-buddy 今天开源。这是我做它时想明白的一件事。</p>
+      <p class="dek">DS-buddy 今天开源。这篇文章记录做它的过程里，我对多 agent 的看法是怎么变的，包括走错的地方。</p>
     </header>
 <p>Hi 大家～</p>
-<p>agent 越来越能干，我却越来越忙。</p>
-<p>忙的都是搬运。把这个对话里的结论贴给那个对话，给新开的 agent 再讲一遍背景，盯着谁跑完了、谁卡住了，最后把几份结果拼到一起。一天下来，我大部分时间在当胶水。真正该我做的事，想清楚方向、做出判断，反而没时间做。</p>
-<p>这不只是我的感觉。今年 3 月，BCG 在《哈佛商业评论》上发过一份 1,488 人的<a href="https://hbr.org/2026/03/when-using-ai-leads-to-brain-fry">调查</a>：要一直盯着 AI 干活的人更累，同时用的 AI 工具到了三个，自己感觉到的效率就见顶了。他们管这叫 AI brain fry。</p>
-<p>所以做 AI 应用产品，我觉得排在最前面的问题只有一个：降低人和 AI 沟通要占的带宽。人说得越少越好，AI 还得把事办对。</p>
-<p>顺着这个问题看，我不太认同现在多 agent 产品的组织方式。我的看法是：<strong>管理 agent，就是管理 context。</strong>一个真正好的 agent 产品，不需要把 agent 这一层摆到你面前。</p>
-<p><strong>一个 agent 拆开看，是一部分上下文加一个模型。</strong>各家做抽象都先走向了 agent，我觉得是因为我们习惯了通过人来组织上下文：谁负责什么，有事找谁。于是也给 AI 排了岗位，起了名字。可人和人差别很大，所以才要分工。agent 和 agent 之间的差别极小，同一个模型换一段说明，「设计师」就成了「工程师」。真正有差别的是背后的模型。</p>
-<p>再想一步：同一个项目里开三个对话，和拉三个 agent 围着同一件事干活，区别在哪？我想了很久，觉得没有区别，都是三份上下文，后面各接一个模型。对话只是 agent 那一侧装上下文的办法，一条线，只往后加。人想事情不按对话想，一件任务也不该被一条对话框住。</p>
-<p><strong>让 agent 互相传话，多数时候没有必要。</strong>人和人传话会走样，agent 也一样，还要多付一轮成本。我自己就翻过车：早先的版本里，我对助理说了一句目标，它转交给干活的 agent 时，顺手补了几条我没说过的要求，下游当成我的原话照着做了。fork 多数时候比多 agent 好用，原因也在这里：fork 是把上下文整份带过去，没有转述，就没有走样。</p>
-<p><strong>但 fork 不丢东西，也不减东西。</strong>主对话越聊越长，每 fork 一次都背着全部历史。回头看，多 agent 真正有用的地方在另一头：它给每件事单独开了一份干净的上下文。把名字和角色拿掉，剩下的就是一种管理 context 的办法。</p>
-<p>我想两头都要：每件事一份干净的上下文，里面的话又是原样的。这靠一路聊下去是长不出来的，得一开始就围着任务来设计。</p>
-<p>往哪个方向搭？我觉得不该是让人来控制：建频道，拉群，@ 谁。<strong>人只需要讲清楚三件事：要做什么，上下文在哪，标准是什么。</strong>然后由 AI 把它拆成一个个任务，每个任务带一份上下文包。可以粗略理解成一份 goal 文件：目标，你的原话，怎么算完成，做到哪了。要长期维护的是它，有进展就更新，开工时注入。</p>
-<p>至于那些临时干活的 agent，都是 tool：一个 runtime，状态很脆弱，断了、换了，把上下文包重新注入就好。每次启动是不是一个全新的 context，怎么围着缓存省 token，这些我还没想透，但都不该是用户感知得到的细节。</p>
-<p><strong>这就是我做 DS-buddy 的出发点。</strong>现在的多 agent 产品，我觉得暴露得太多了。Claude Projects 让一个项目里的几段对话共用一份资料，但只能用 Claude 的模型。Multica 用工单，Raft 用群聊，底层的抽象做得很好，我借鉴了不少。只是在它们那里，agent 还摆在最前面，一件事怎么拆、每件事带哪些背景，多半还是人来定。搭 context、做分工，对人来说本身就是费力的事，胶水的活只是换了个地方。</p>
-<p><strong>要让 AI 接过这一层，它得先足够了解你。</strong>所以 DS-buddy 里最重要的设计，是上下文的收集。屏幕上正在做的事，飞书里的消息，源源不断地进来，每 10 分钟整理成一条时间线，认得出属于哪个项目的就归过去；电脑里的文件，它需要时可以去读。全部只读，随时能关。</p>
-<p>自动收集不是新鲜事。Screenpipe（DS-buddy 读屏幕用的就是它）、AirJelly、Littlebird，还有 Codex 里的 Computer History，都已经在做。我看下来，它们多半停在记住和能查到。从看到的上下文里提出一件事，拆开，做完，再回到你面前等你拍板，这一圈还得人自己来接。DS-buddy 想接上的是这一圈。</p>
-<p>我觉得这会是以后的工作方式：人只在真正需要自己的地方开口，说喜好，说取舍，给出关键的那一下指引，不再当信息的搬运工。</p>
-<p>里面那个一直在的助理，默认叫 Tacit，取「默会」的意思，心领神会。一个真正好的 buddy，应该在你开口之前，就已经了解和这件事有关的一切。到那时候，背后有几个 agent、各叫什么，你不需要知道。</p>
-<p>DS-buddy 是 DeepSeek Harness 的一个开源插件，代码在 <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>。它还很早，例如任务是 AI 拆的，项目还得你说一句它才建。想看产品长什么样、各家产品怎么比，在<a href="deep/">长文</a>里。欢迎来试，哪里说不通，直接告诉我～</p>
+<p>DS-buddy 是 DeepSeek Harness 的一个插件。你说一句目标，它拆成几个任务去做，做完交到你面前。</p>
+<p>做它的起因很简单。同时用好几个 agent 干活的时候，我大部分时间在当胶水：给这个讲一遍背景，把那个的结论搬过来，盯着谁卡住了。真正该我做的事是想清楚方向，反而没时间做。</p>
+<h2 id="s1">一开始，我也给 AI 排了岗位</h2>
+<p>早先的版本里，每个项目是一个群聊。群里有一个项目助理，它会按需要创建角色。每个角色有名字，有一两句人设，有自己的头像。我在群里 @ 它们干活。</p>
+<p>这样做很自然。我们习惯了通过人来组织工作：谁负责什么，有事找谁。</p>
+<p>到我回头去数的时候，12 个项目里一共建过 18 个角色。但我发现自己并不关心是哪个角色在干活。我关心的只是这件事做到哪了，用的是哪个模型。</p>
+<p>后来我去看代码。一个角色实际贡献的只有三样东西：一个名字，一两句人设，一个默认模型。干活时的会话是按任务开的，不按角色开。也就是说，真正在干活的是这件事的上下文，加上一个模型。角色只是贴在上面的标签。</p>
+<p>我把创建角色的功能删了。现在一个项目只有一个执行者，界面上显示的是它用的模型。</p>
+<p>这件事改变了我的看法：管理 agent，其实就是管理上下文。</p>
+<h2 id="s2">传话会走样</h2>
+<p>角色拿掉之后，还剩一处要传话：我把事情说给个人助理，它再转交给项目。</p>
+<p>开源当天早上，我在一个全新安装的环境里从头走了一遍，顺手做了一次对照。同一句话，直接说给项目，16 秒后开出了两个任务，48 秒交回第一份。说给个人助理再转交，只开出一个合在一起的任务，11.6 分钟才交付。</p>
+<p>原因是助理转交时重写了我的话，还补了几条我没说过的要求。下游把它们当成我的原话，照着做了。</p>
+<p>现在转交只能引用我的原话，代码会核对这句话确实是我说的。助理想补充的另外标出来，不算我的要求。改完再测，转交之后半分钟内就开出了两个任务。</p>
+<p>人和人传话会走样，agent 之间也一样。这也是 fork 多数时候比多 agent 好用的原因：fork 把上下文整份带过去，不经转述。</p>
+<h2 id="s3">每件事一份自己的上下文</h2>
+<p>fork 也有代价。它什么都带，主对话越长，带的东西越多。长到一定程度只能压缩，细节就丢了。</p>
+<p>所以我现在的做法是，上下文从一开始就按任务来组织，不指望它在一段对话里自己长出来。</p>
+<p>我只讲三件事：要做什么，上下文在哪，标准是什么。AI 把它拆成任务，每个任务带一份自己的记录：目标，我的原话，怎么算完成，做到哪了。可以粗略理解成一份 goal 文件。</p>
+<p>要长期维护的是这份记录。执行它的 agent 是临时的。默认是 DeepSeek Harness 里的一个会话，也可以在任务里换成 Claude Code。换了之后，接手的拿到的还是同一份记录。</p>
+<p>每次启动时上下文怎么拼、缓存怎么用才省 token，我还没想透，不确定现在的做法是不是最好的。但这些不该是用户要操心的细节。</p>
+<h2 id="s4">上下文得自己进来</h2>
+<p>做到这里，任务是 AI 拆的了，背景却还得我来喂：复制一段群聊，贴一个文件，讲一遍昨天做到哪。</p>
+<p>所以我加了上下文的收集。屏幕上在做的事每分钟读一次，飞书消息每两分钟读一次。每 10 分钟整理成一条时间线，认得出属于哪个项目的就归过去。电脑里的文件，它需要时去读。全部只读，随时能关。</p>
+<p>自动收集不是新鲜事。Screenpipe、AirJelly、Littlebird 和 Codex 里的 Computer History 都在做。DS-buddy 读屏幕用的就是 Screenpipe。我想多走的一步，是让这些上下文接到做事上。夜里它把这一天过一遍，早上最多留三张卡，告诉我有什么可以做、有什么值得看。</p>
+<h2 id="s5">别家的做法</h2>
+<p>Multica 和 Raft 把 agent 当队友，用工单和群聊把协作组织起来。它们底层的设计很好，我借鉴了不少，比如每件事有一份长期的记录，结果落在大家都看得到的地方。Claude Projects 让一个项目里的几段对话共用一份资料，但只能用 Claude 的模型。</p>
+<p>我和 Multica、Raft 的分歧只有一处：我不想让人来管 agent。事情怎么拆，谁来做，带哪些背景，我希望是 AI 的事。</p>
+<h2 id="s6">现在的样子，和还没做好的</h2>
+<p>现在打开 DS-buddy，你面对的只有项目、任务和一块叫「待你决定」的看板。看板分三栏：等你，进行中，今天完成。等你那一栏放的是需要你的：要你拍板的，等你验收的，出了错的。只有你点了验收，一件事才算完。我希望人只在这些地方开口，不用再搬运信息。</p>
+<p>里面一直在的那个助理，默认叫 Tacit，取「默会」的意思。我希望它在你开口之前，就已经了解和这件事有关的背景。</p>
+<p>还没做好的也不少：</p>
+<ul><li>任务是 AI 拆的，项目还得你说一句它才建。</li><li>时间线的整理不总是对，相邻的几段容易被写成同一件事。</li><li>换执行者只在一轮做完之后生效。Codex 能选，但还没验证到它跑完一个完整任务。</li></ul>
+<p>代码在 <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>，产品截图和各家的详细对比在<a href="deep/">长文</a>里。欢迎来试，哪里说不通，直接告诉我～</p>
   </article>
 </main>
-
+<aside class="toc" aria-label="目录"><div><a class="l2" href="#s1">一开始，我也给 AI 排了岗位</a><a class="l2" href="#s2">传话会走样</a><a class="l2" href="#s3">每件事一份自己的上下文</a><a class="l2" href="#s4">上下文得自己进来</a><a class="l2" href="#s5">别家的做法</a><a class="l2" href="#s6">现在的样子，和还没做好的</a></div></aside>
 </div>
 <script>
 document.querySelector(".theme").addEventListener("click",function(){var r=document.documentElement,d=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=d==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("tacit-theme",n)}catch(e){}});
