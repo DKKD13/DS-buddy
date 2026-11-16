@@ -2,7 +2,7 @@
 
 **Say the goal. Make the calls.**
 
-DS-buddy is an open-source plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). You state a goal in one sentence. It asks about what you left unclear, splits the work into tasks that run at the same time, and brings finished work back to you. You face projects, tasks and one board called Waiting on you. You never see the agent layer.
+DS-buddy is an open-source plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). You state a goal in one sentence. It asks about what you left unclear, splits the work into tasks that run at the same time, and brings finished work back to you. You face projects, tasks and one board called Waiting on you. You never see the agent layer. The personal assistant inside is called Tacit by default, as in tacit understanding.
 
 [Why it is built this way](https://dkkd13.github.io/tacit-dsh/site/blog/en/) · [Long read](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) · [Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
 

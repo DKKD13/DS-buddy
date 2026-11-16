@@ -2,7 +2,7 @@
 
 **只说目标，只管拍板。**
 
-DS-buddy 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的一个开源插件。你说一句目标，它把没说清的问清楚，拆成几个任务同时去做，做完把成品交到你面前。你面对的只有项目、任务和一块「待你决定」的看板，看不到 agent 这一层。
+DS-buddy 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的一个开源插件。你说一句目标，它把没说清的问清楚，拆成几个任务同时去做，做完把成品交到你面前。你面对的只有项目、任务和一块「待你决定」的看板，看不到 agent 这一层。里面那个一直在的个人助理，默认叫 Tacit，取「默会」的意思。
 
 [为什么这么做](https://dkkd13.github.io/tacit-dsh/site/blog/) · [长文](https://dkkd13.github.io/tacit-dsh/site/blog/deep/) · [产品页](https://dkkd13.github.io/tacit-dsh/site/) · [演示片](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [English](README.en.md)
 
