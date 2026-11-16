@@ -353,7 +353,7 @@ def main():
     (OUT / "img").mkdir(parents=True)
     used = {"rd2-hero.jpg"}   # the share image of the Chinese pages
     for src in (ROOT / "content").glob("*.md"): used |= set(re.findall(r"img/([\w.-]+\.jpg)", src.read_text(encoding="utf-8")))
-    used |= {p.name for p in (ROOT / "img").glob("rd4-*.jpg")}   # the README's pictures live here too
+    used |= {p.name for p in (ROOT / "img").glob("r5-*.png")}   # the README's pictures live here too
     for name in sorted(used): shutil.copy2(ROOT / "img" / name, OUT / "img" / name)   # only the images the pages use
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
     for lang, src, outdir, rel, sub in PAGES:
