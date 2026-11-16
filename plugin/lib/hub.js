@@ -637,7 +637,7 @@ export function hubWakeText(hub, _key, unread, reason, extra = '') {
   const conversation = unread.some(e => e.type === 'message.posted' && e.author?.kind === 'human' || e.type === 'mira.requested' && e.reason === 'conversation')
   if (conversation) reason = 'conversation'
   const kinds = new Map()
-  const KIND = { 'message.posted': '个人对话', 'project.attention': '项目里需要你看的事', 'feishu.attention': '飞书里等用户回的消息', 'mira.requested': '整理请求', 'card.acted': '用户用了你的卡', 'card.dismissed': '用户关掉了你的卡' }
+  const KIND = { 'message.posted': '个人对话', 'project.attention': '项目里需要你看的事', 'feishu.attention': '飞书里等回复的消息', 'mira.requested': '整理请求', 'card.acted': '卡片被用了', 'card.dismissed': '卡片被关掉了' }
   for (const e of unread) kinds.set(KIND[e.type] ?? e.type, (kinds.get(KIND[e.type] ?? e.type) ?? 0) + 1)
   const request = unread.filter(e => e.type === 'mira.requested').at(-1)
   const hour = new Date().getHours()

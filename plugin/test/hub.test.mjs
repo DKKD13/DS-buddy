@@ -456,3 +456,13 @@ test('hub_no_reply ends the turn as the project no_reply does, so no closing lin
   assert.equal(result, '好，本轮不回复。')
   assert.match(env.hubTools.find(t => t.definition.name === 'hub_no_reply').definition.description, /调用后本轮就结束/)
 })
+
+test('a wake counts its kinds in words the owner can read: the page shows that line as it is', () => {
+  const unread = [
+    { type: 'feishu.attention', seq: 1 }, { type: 'card.acted', seq: 2 }, { type: 'card.dismissed', seq: 3 },
+    { type: 'project.attention', seq: 4 }, { type: 'mira.requested', reason: 'attention', seq: 5 },
+  ]
+  const counted = /新动态 \d+ 条：(.+?)。/.exec(hubWakeText({}, 'mira', unread, 'attention'))[1]
+  assert.equal(counted, '飞书里等回复的消息 1，卡片被用了 1，卡片被关掉了 1，项目里需要你看的事 1，整理请求 1')
+  assert.doesNotMatch(counted, /用户/)
+})
