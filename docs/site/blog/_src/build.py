@@ -148,8 +148,8 @@ def convert(md, lang, rel=""):
     return title, dek, "\n".join(out), toc
 
 # ---------------------------------------------------------------- page
-UI = {"zh": dict(lang="zh-CN", post="发布", deep="拆解", toc="目录", date="2026/11/16", theme="切换深浅色", by="Tacit 团队"),
-      "en": dict(lang="en", post="Launch", deep="Teardown", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="The Tacit team")}
+UI = {"zh": dict(lang="zh-CN", post="发布", deep="拆解", toc="目录", date="2026/11/16", theme="切换深浅色", by="Tacit"),
+      "en": dict(lang="en", post="Launch", deep="Teardown", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="Tacit")}
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
 def page(lang, title, dek, body, toc, rel, sub):
     """rel: path from this page back to the site root; sub: "" for the launch post, "deep/" for the teardown."""

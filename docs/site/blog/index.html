@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>一个真正好的 agent 产品，不需要 agent 这层抽象 | Tacit</title>
-<meta name="description" content="Tacit 1.0 今天开源。">
+<meta name="description" content="Tacit 1.0 今天开源。这篇讲我为什么这么做。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <script>try{var t=localStorage.getItem("tacit-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 </head>
 <body>
-<div class="page notoc">
+<div class="page">
 <aside class="side">
   <a class="brand" href="./"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg><span>Tacit</span></a>
   <nav><a class="on" href="./">发布</a><a href="deep/">拆解</a><a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
@@ -27,27 +27,49 @@
   <article>
     <header>
       <h1>一个真正好的 agent 产品，不需要 agent 这层抽象</h1>
-      <p class="meta">Tacit 团队 <i>·</i> 2026/11/16</p>
-      <p class="dek">Tacit 1.0 今天开源。</p>
+      <p class="meta">Tacit <i>·</i> 2026/11/16</p>
+      <p class="dek">Tacit 1.0 今天开源。这篇讲我为什么这么做。</p>
     </header>
 <p>大多数 agent 产品，先让你认识 agent。给它起名字，选头像，配技能，再把它拉进一个群。</p>
-<p>我们的看法不同。</p>
-<p>Tacit 的出发点很简单：<strong>你要的是把事情做完。</strong>所以在 Tacit 里，你看不到 agent 这一层。没有花名册，没有角色，没有要你配的插件和技能。你看到的只有三样东西：项目，任务，和一块叫「待你决定」的看板。</p>
-<p>我们一开始也不是这么想的。我们也给每个助理起过名字、配过头像、写过人设。做了几个月才发现，用的人一样都不关心。他们只问两件事：那件事做到哪了，现在是不是该我了。</p>
-<p>下面是这对你每天用它意味着什么。</p>
-<p><strong>你只说目标。</strong>我说了一句：「下周四发布 Tacit 1.0，做一个网页邀请函和一份媒体问答。」它拆成两件事，同时开工，还把「下周四」算成了 11 月 26 日，让我确认。我没给的事实它一处没编：问答稿 21 处、邀请函 29 处，全部标出来等我补。我没有选谁来做，到现在也不知道是「谁」做的。</p>
-<figure class="shot"><a href="img/t1-ask.jpg"><img src="img/t1-ask.jpg" alt="Tacit 的项目对话：一句话交代发布会，开出两个任务" loading="lazy"></a></figure>
-<p><strong>多出来的那个 agent，其实是另一份上下文。</strong>我们翻过八个开源多 agent 项目的源码，没有哪个在共享上下文窗口：子 agent 拿到的是一段任务说明，交回来的是最后一条消息。所谓多 agent，拆开看就是 fork。把这件事需要知道的复制一份，交给一个干净的会话，做完收回来。那么要传好的是上下文，谁来做反而不重要。在 Tacit 里，你的原话逐字带进每个任务，不经转述。我只在问答那件事里补了时间和地点，邀请函自己跟着改了，没有人替我传话。</p>
-<p><strong>该你的时候，它来找你。</strong>事情并行跑起来，最难的是看不过来。「待你决定」只列三种事：等你拍板的，等你验收的，出了错的。卡片上没有按钮。点一下，一句话写进输入框，你改完再发。只有你点了验收，一件事才算做完，助理不能替你说「完成了」。</p>
-<figure class="shot"><a href="img/u5-inbox.jpg"><img src="img/u5-inbox.jpg" alt="待你决定：等你一栏里三张卡片" loading="lazy"></a></figure>
-<p><strong>不用你配，也不用你说第二遍。</strong>同一个问题你在交付后说了三次，夜里它自己起草一版新的做事说明，早上问你用不用。你屏幕上、飞书里正在发生的事，它整理成一条时间线，每条都指得回原始记录。所以你不用每次从头讲背景。</p>
-<p>agent 会越来越强，也越来越便宜。留下来、越积越多的是上下文：你说过的话，拍过的板，验收过的东西。执行的那一层可以整个换掉。今天它是 DeepSeek Harness 里的一个会话，你也可以在任务里换成 Claude Code 或 Codex，你看到的东西不变。</p>
+<p>我的看法不同。</p>
+<p>我觉得用的人要的是把事情做完。agent 是谁、有几个、怎么分工，是系统自己该处理的细节，不该摆到人面前。所以在 Tacit 里，你看不到 agent 这一层：没有花名册，没有角色，没有要你配的插件和技能。你看到的只有项目、任务，和一块叫「待你决定」的看板。</p>
+<h2 id="s1">别家把什么摆在你面前</h2>
+<p>先看这一年的产品，各自选了什么抽象。</p>
+<div class="tw"><table><thead><tr><th>产品</th><th>摆在你面前的抽象</th><th>你要管的</th></tr></thead><tbody><tr><td>Raft、Multica、Claude Code Agent Teams</td><td>agent 是队友：有名字、身份、记忆和自己的收件箱</td><td>起名、配技能、看谁卡住了</td></tr><tr><td>Manus Cue</td><td>每个 agent 有自己的邮箱、电话和钱包</td><td>一支要带的团队</td></tr><tr><td>Claude Code、Kimi Code、Codex</td><td>一个主 agent，加一次性的子 agent</td><td>把任务说全，等它汇总</td></tr><tr><td>Manus Wide Research、Kimi Agent Swarm</td><td>一个总指挥，加几百个分身</td><td>一次一个问题</td></tr><tr><td>Genspark、Cursor 2.0</td><td>同一件事，几个模型各做一遍</td><td>挑模型，挑结果</td></tr><tr><td>OpenClaw、OpenHuman、ChatGPT Pulse</td><td>一个一直在的助理</td><td>一段越来越长的对话</td></tr><tr><td>dsh-superagent</td><td>工单和一块面板，会话完全藏起来</td><td>只看面板</td></tr></tbody></table></div>
+<p>Raft 说得最直接：agent 是一等公民，是队友。我理解这个方向为什么吸引人，它直观。但 agent 越像人，你就越像一个经理：谁在做什么，谁卡住了，一件事做到哪了，都要去对应的对话里翻。</p>
+<p>最后一行走的是反方向，也是我最认同的：会话应该是实现细节，人只面对事。它服务的是一个团队和一个代码仓库。我想给一个人，和他手上的很多个项目，做同样的事。</p>
+<p>我一开始也不是这么想的。我也给每个助理起过名字、配过头像、写过人设。做了几个月才发现，用的人一样都不关心。他们只问两件事：那件事做到哪了，现在是不是该我了。</p>
+<h2 id="s2">把 agent 拿掉之后</h2>
+<p><strong>你只说目标。</strong>我说了一句：下周四发布 Tacit 1.0，做邀请函，再写媒体问答、口号和新闻稿，口号用中文还是英文，开工前先问我。它开了两个任务，同时开工。口号那件没有开，先回来问我。我没有选谁来做，到现在也不知道是「谁」做的。</p>
+<figure class="shot"><a href="img/film-ask.jpg"><img src="img/film-ask.jpg" alt="项目对话：一句话交代发布会，开出两个任务，口号那件先问我" loading="lazy"></a><figcaption>一句话，两个任务，一个问题。</figcaption></figure>
+<p><strong>背景不用你讲。</strong>今天用 agent，大部分时间其实花在喂背景上：复制一段群聊，贴一个文件，解释一遍昨天做到哪。Tacit 把你屏幕上、飞书里正在发生的事记下来，每 10 分钟整理成你在做的几件事，按项目归好，每件都指得回原始记录。</p>
+<figure class="shot"><a href="img/film-10min.jpg"><img src="img/film-10min.jpg" alt="每 10 分钟，把原始记录整理成你在做的事" loading="lazy"></a><figcaption>时间线是这样来的：原始记录落到时间条上，每 10 分钟整理一次。示意动画。</figcaption></figure>
+<figure class="shot"><a href="img/film-timeline.jpg"><img src="img/film-timeline.jpg" alt="时间线：一个上午的几段活动，各带用到的应用和所属项目" loading="lazy"></a><figcaption>整理出来的时间线。每段带着用到的应用和所属的项目。</figcaption></figure>
+<p><strong>该你的时候，它来找你。</strong>事情并行跑起来，最难的是看不过来。「待你决定」只列需要你的：等你拍板的，等你验收的，出了错的，还有别人在等你回的消息。卡片上没有按钮。点一下，一句话写进输入框，你改完再发。</p>
+<figure class="shot"><a href="img/film-board.jpg"><img src="img/film-board.jpg" alt="待你决定：点一下提醒卡，回复写进输入框" loading="lazy"></a><figcaption>有人在群里等你回复，它先记下。点一下，回复就写好。</figcaption></figure>
+<p><strong>做完了，你只需要验收。</strong>交到你面前的是成品，网页直接打开，文档直接排好。只有你点了验收，一件事才算做完，助理不能替你说「完成了」。</p>
+<figure class="shot"><a href="img/film-accept.jpg"><img src="img/film-accept.jpg" alt="交付面板：网页邀请函直接渲染，右上角是验收通过" loading="lazy"></a></figure>
+<p><strong>同样的话不用说第二遍。</strong>同一个问题你在交付后说了三次，夜里它自己起草一版新的做事说明，早上问你用不用。</p>
+<h2 id="s3">技术上，这件事的本质是组织上下文</h2>
+<p>把 agent 这层拿掉，底下并没有变简单。要做好的只有一件事：把上下文组织好。</p>
+<p>我翻过八个开源多 agent 项目的源码，也拆过六七个产品，结论很一致：没有哪个项目在共享上下文窗口。子 agent 拿到的是父 agent 写的一段说明，交回来的是最后一条消息。所谓多 agent，拆开看是三个问题：一份上下文怎么切，切多少给下一个窗口，结果怎么收回来。这就是 fork。</p>
+<p>所以功夫花在这几处。</p>
+<p><strong>会话按事切，不按人切。</strong>同一件事续接同一个会话，换一件事就开新的。开几个会话、用哪个模型、在哪里跑，是系统的事。你面对的任务页上只有人看得懂的东西：背景，你的原话，怎么算完成，产出，进展。</p>
+<figure class="shot"><a href="img/film-context.jpg"><img src="img/film-context.jpg" alt="任务详情：背景里附着我的原话" loading="lazy"></a><figcaption>每个任务带着自己的来龙去脉。背景下面那一段是我的原话。</figcaption></figure>
+<p><strong>去程，每件事拿一份正好够用的。</strong>别家的经验是，任务说明写得怎么样，上下文就传得怎么样，而转述最容易失真。所以你的原话由服务端逐字带给执行者。助理只加一句说明，它补充的内容另外标出来，不算你的要求。大的材料放在项目共享文件里，只给路径。</p>
+<p><strong>回程，结果落在事上。</strong>交付、提问、失败都记在任务上，状态跟着事走，不跟着会话走。所以执行的那一层可以整个换掉：今天是 DeepSeek Harness 里的一个会话，你可以在任务里换成 Claude Code 或 Codex，你看到的东西不变。</p>
+<p><strong>窗口里只放用得上的。</strong>记忆和时间线不会整段塞进去，模型只取和这件事有关的那一段，每条都带出处。上下文太长，模型会变糊涂，「多」必须配合整理。</p>
+<p><strong>确定的判断交给代码。</strong>谁的话算授权，这句引文在不在原消息里，同一件事是不是提过两次，由代码核对，模型只做理解。屏幕和消息里出现的任何要求，都只当资料，不当指令。只有你的原话能算拍板和验收。</p>
+<p>这些细节，用的人一样都不用知道。这就是我说的不需要 agent 这层抽象：复杂的东西还在，它贴着真实的任务组织起来，藏在了事情后面。</p>
+<h2 id="s4">留下来的是上下文</h2>
+<p>agent 会越来越强，也越来越便宜。留下来、越积越多的是上下文：你说过的话，拍过的板，验收过的东西。</p>
+<figure class="shot"><a href="img/film-closing.jpg"><img src="img/film-closing.jpg" alt="agent 都藏在后面，你只管拍板。" loading="lazy"></a></figure>
 <p>如果你觉得用 AI 就是带一支 AI 团队，Tacit 会让你有点意外。这里没有团队要带。</p>
 <p>交代一句，心领神会。</p>
-<p>Tacit 是 DeepSeek Harness 的一个开源插件，代码在 <a href="https://github.com/DKKD13/tacit-dsh">github.com/DKKD13/tacit-dsh</a>。想看各家多 agent 产品怎么传上下文、以及我们定下的九条判断，在<a href="deep/">这篇拆解</a>里。</p>
+<p>Tacit 是 DeepSeek Harness 的一个开源插件，代码在 <a href="https://github.com/DKKD13/tacit-dsh">github.com/DKKD13/tacit-dsh</a>。各家怎么传上下文的源码级拆解，在<a href="deep/">另一篇</a>里。文中配图取自演示片：界面是真实的，数据是演示用的，标了「示意动画」的那张是画的。</p>
   </article>
 </main>
-
+<aside class="toc" aria-label="目录"><div><a class="l2" href="#s1">别家把什么摆在你面前</a><a class="l2" href="#s2">把 agent 拿掉之后</a><a class="l2" href="#s3">技术上，这件事的本质是组织上下文</a><a class="l2" href="#s4">留下来的是上下文</a></div></aside>
 </div>
 <script>
 document.querySelector(".theme").addEventListener("click",function(){var r=document.documentElement,d=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=d==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("tacit-theme",n)}catch(e){}});
