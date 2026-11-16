@@ -20,7 +20,12 @@ L = {
             wb="拍板、验收、要改，都记回去", r1="结果", r2="回到", r3="一处",
             z1="只有 brief", z2="过滤或压缩后的历史", z3="完整历史", loc="（本地）", rem="（远程 A2A）", dflt="（默认）", tacitrow="DS-buddy：任务说明 + 你的原话 + 项目文件",
             p1="要做什么", p2="上下文在哪", p3="标准是什么", ptitle="任务的上下文包", pr1="目标和背景", pr2="你的原话", pr3="怎么算完成", pr4="进展和产出", pr5="读过的文件",
-            prt="执行的 runtime（一次性）", pin="开工时注入", pout="进展写回", pkeep="长期维护", pswap="随时可以换"),
+            prt="执行的 runtime（一次性）", pin="开工时注入", pout="进展写回", pkeep="长期维护", pswap="随时可以换",
+            xtitle="一个执行会话的上下文，从前往后", xstable="稳定的前缀：每次唤醒都能命中缓存", xappend="每次唤醒只在末尾追加",
+            xsys="系统提示", xrole="角色说明（开会话时冻结）", xturns="之前的回合", xwake="唤醒通知", xpull="拉取的条目", xgrow="新内容从这里往后加",
+            xsame="同一件事 → 续接同一个会话", xnew="项目设置变了 → 开新会话，重新冻结",
+            hscreen="屏幕：每分钟", hfeishu="飞书：每 2 分钟", hraw="原始记录", hwin="每 10 分钟一窗", hmodel="小模型：0 到 3 件事",
+            hwith="带上一段活动和项目列表", hcheck="代码核对出处", hdrop="指不回原始记录的丢弃", htl="时间线", hread="个人助理读取"),
  "en": dict(you="You", board="Board / group chat", assign="assign, chase progress", pm="PM", des="Designer", eng="Engineer", own="its own context",
             talk="They message and relay to each other; one context each", lead="Orchestrator", ask="one question", worker="Worker", clean="clean context",
             back="No cross-talk; only conclusions come back", task="The same task", ma="Model A", mb="Model B", mc="Model C", merge="Merge, or you pick",
@@ -32,7 +37,12 @@ L = {
             wb="every click is written back", r1="results", r2="come", r3="back",
             z1="Brief only", z2="Filtered or compressed history", z3="Full history", loc=" (local)", rem=" (remote A2A)", dflt=" (default)", tacitrow="DS-buddy: task brief + your own words + project files",
             p1="What to do", p2="Where context is", p3="The standard", ptitle="The task's context pack", pr1="Goal and background", pr2="Your own words", pr3="What counts as done", pr4="Progress and outputs", pr5="Files read",
-            prt="Runtimes (disposable)", pin="injected at start", pout="progress written back", pkeep="maintained over time", pswap="swappable any time"),
+            prt="Runtimes (disposable)", pin="injected at start", pout="progress written back", pkeep="maintained over time", pswap="swappable any time",
+            xtitle="One executor session's context, start to end", xstable="Stable prefix: a cache hit on every wake", xappend="Each wake appends at the end only",
+            xsys="System prompt", xrole="Role, frozen at start", xturns="Earlier turns", xwake="Wake notice", xpull="Pulled items", xgrow="New content goes on from here",
+            xsame="Same job → same session", xnew="Settings changed → new session",
+            hscreen="Screen: every minute", hfeishu="Feishu: every 2 min", hraw="Raw records", hwin="10-minute window", hmodel="Small model, 0–3 items",
+            hwith="plus last activity, projects", hcheck="Code checks sources", hdrop="unsourced: dropped", htl="Timeline", hread="Assistant reads it"),
 }
 
 def box(cx, cy, w, h, text, cls="n", bold=False):
@@ -116,7 +126,24 @@ def fig_pack(t, cap):
     b += arrow("M386 104 H518", m) + txt(452, 96, t["pin"]) + arrow("M518 150 H388", m) + txt(452, 166, t["pout"])
     b += txt(285, 248, t["pkeep"], cls="d-a") + txt(594, 226, t["pswap"])
     return svg("pack", 258, b, cap)
-FIGS = dict(inherit=fig_inherit, pack=fig_pack, roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
+def fig_prefix(t, cap):
+    m = "ar-prefix"; b = txt(22, 20, t["xtitle"], "start", cls="d-t d-b")
+    b += line("M22 46 H436") + line("M22 46 V54") + line("M436 46 V54") + txt(229, 40, t["xstable"], cls="d-a")
+    b += line("M446 46 H658") + line("M446 46 V54") + line("M658 46 V54") + txt(552, 40, t["xappend"])
+    for cx, w, name, cls in ((78, 112, t["xsys"], "n"), (222, 168, t["xrole"], "ctx"), (372, 128, t["xturns"], "n"), (495, 98, t["xwake"], "n"), (604, 108, t["xpull"], "n")):
+        b += box(cx, 78, w, 36, name, cls)
+    b += arrow("M446 112 H664", m) + txt(552, 130, t["xgrow"])
+    b += box(170, 172, 280, 32, t["xsame"]) + box(500, 172, 300, 32, t["xnew"])
+    return svg("prefix", 200, b, cap)
+def fig_history(t, cap):
+    m = "ar-history"; b = box(80, 44, 140, 30, t["hscreen"]) + box(80, 92, 140, 30, t["hfeishu"])
+    b += line("M150 44 H168") + line("M150 92 H168") + line("M168 44 V92") + arrow("M168 68 H186", m)
+    b += box(258, 68, 140, 34, t["hraw"], "ctx") + arrow("M328 68 H350", m) + box(420, 68, 136, 34, t["hwin"])
+    b += arrow("M488 68 H508", m) + box(590, 68, 160, 34, t["hmodel"]) + txt(590, 38, t["hwith"])
+    b += arrow("M590 85 V139", m) + box(590, 158, 160, 34, t["hcheck"]) + txt(590, 192, t["hdrop"])
+    b += arrow("M510 158 H490", m) + box(420, 158, 136, 34, t["htl"], "ctx") + arrow("M352 158 H330", m) + box(258, 158, 140, 34, t["hread"])
+    return svg("history", 206, b, cap)
+FIGS = dict(prefix=fig_prefix, history=fig_history, inherit=fig_inherit, pack=fig_pack, roles=fig_roles, orchestrator=fig_orchestrator, parallel=fig_parallel, assistant=fig_assistant, panel=fig_panel, tacit=fig_tacit)
 
 # ---------------------------------------------------------------- tiny markdown
 BULLET = re.compile(r"^(- |\d+\. )")
@@ -171,13 +198,13 @@ UI = {"zh": dict(lang="zh-CN", post="短文", deep="长文", toc="目录", date=
       "en": dict(lang="en", post="Short", deep="Long read", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="DS-buddy")}
 SITE = "https://dkkd13.github.io/tacit-dsh/site/blog/"   # where the pages are served; change it if the repository is renamed
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
-def page(lang, title, dek, body, toc, rel, sub, kicker=""):
+def page(lang, title, dek, body, toc, rel, sub, kicker="", desc=""):
     """rel: path from this page back to the site root; sub: "" for the launch post, "deep/" for the teardown."""
     u = UI[lang]; here = lambda path: path or "./"
     base = rel + ("en/" if lang == "en" else "")                     # this language's home
     zh_href, en_href = here(rel + sub), rel + "en/" + sub
     url = SITE + ("en/" if lang == "en" else "") + sub
-    share = "".join(f'<meta property="og:{k}" content="{html.escape(v, quote=True)}">\n' for k, v in (("type", "article"), ("site_name", "DS-buddy"), ("title", title), ("description", dek), ("url", url)))
+    share = "".join(f'<meta property="og:{k}" content="{html.escape(v, quote=True)}">\n' for k, v in (("type", "article"), ("site_name", "DS-buddy"), ("title", title), ("description", desc), ("url", url)))
     if lang == "zh": share += f'<meta property="og:image" content="{SITE}img/film-closing.jpg">\n<meta name="twitter:card" content="summary_large_image">\n'   # the picture carries Chinese text
     else: share += '<meta name="twitter:card" content="summary">\n'
     ON = ' class="on"'
@@ -190,7 +217,7 @@ def page(lang, title, dek, body, toc, rel, sub, kicker=""):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)} | DS-buddy</title>
-<meta name="description" content="{html.escape(dek, quote=True)}">
+<meta name="description" content="{html.escape(desc, quote=True)}">
 {share}<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
@@ -215,7 +242,7 @@ def page(lang, title, dek, body, toc, rel, sub, kicker=""):
       {f'<p class="kick">{inline(kicker)}</p>' if kicker else ""}
       <h1>{inline(title)}</h1>
       <p class="meta">{u["by"]} <i>·</i> {u["date"]}</p>
-      <p class="dek">{inline(dek)}</p>
+      {f'<p class="dek">{inline(dek)}</p>' if dek else ""}
     </header>
 {body}
   </article>
@@ -318,12 +345,18 @@ PAGES = [("zh", "zh.md", "", "", ""), ("zh", "zh-deep.md", "deep/", "../", "deep
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
     (OUT / "img").mkdir(parents=True)
-    for f in sorted((ROOT / "img").glob("*.jpg")): shutil.copy2(f, OUT / "img" / f.name)
+    used = {"film-closing.jpg"}   # the share image of the Chinese pages
+    for src in (ROOT / "content").glob("*.md"): used |= set(re.findall(r"img/([\w.-]+\.jpg)", src.read_text(encoding="utf-8")))
+    for name in sorted(used): shutil.copy2(ROOT / "img" / name, OUT / "img" / name)   # only the images the pages use
     (OUT / "style.css").write_text(CSS, encoding="utf-8")
     for lang, src, outdir, rel, sub in PAGES:
         title, dek, body, toc, kicker = convert((ROOT / "content" / src).read_text(encoding="utf-8"), lang, rel)
         dest = OUT / outdir / "index.html"; dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(page(lang, title, dek, body, toc, rel, sub, kicker), encoding="utf-8")
+        first = re.search(r"<p>(.*?)</p>", body, re.S)
+        first = html.unescape(re.sub(r"<[^>]+>", "", first.group(1))).strip() if first else ""
+        cut = 110 if lang == "zh" else 220
+        desc = dek or (first if len(first) <= cut else first[:cut].rstrip() + "…")
+        dest.write_text(page(lang, title, dek, body, toc, rel, sub, kicker, desc), encoding="utf-8")
         text = re.sub(r"<[^>]+>", "", re.sub(r"<svg.*?</svg>", "", body, flags=re.S))
         print(dest.relative_to(ROOT), "| chars", len(re.sub(r"\s+", "", text)), "| headings", len(toc), "| figures", body.count("<figure"))
 if __name__ == "__main__": main()

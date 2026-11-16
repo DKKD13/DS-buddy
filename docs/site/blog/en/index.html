@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A really good agent product doesn&#x27;t need the agent abstraction | DS-buddy</title>
-<meta name="description" content="DS-buddy is open source today. This post records how my view of multi-agent changed while I built it, including the wrong turns.">
+<title>Introducing DS-buddy: say the goal, make the calls | DS-buddy</title>
+<meta name="description" content="This past year, agent products have been turning into teams. Agents get names, roles, channels and tickets of their own, and the person sits in the middle @-mentioning them. The agents keep getting more capable, and the…">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="DS-buddy">
-<meta property="og:title" content="A really good agent product doesn&#x27;t need the agent abstraction">
-<meta property="og:description" content="DS-buddy is open source today. This post records how my view of multi-agent changed while I built it, including the wrong turns.">
+<meta property="og:title" content="Introducing DS-buddy: say the goal, make the calls">
+<meta property="og:description" content="This past year, agent products have been turning into teams. Agents get names, roles, channels and tickets of their own, and the person sits in the middle @-mentioning them. The agents keep getting more capable, and the…">
 <meta property="og:url" content="https://dkkd13.github.io/tacit-dsh/site/blog/en/">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,7 @@
 <script>try{var t=localStorage.getItem("tacit-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 </head>
 <body>
-<div class="page">
+<div class="page notoc">
 <aside class="side">
   <a class="brand" href="../en/"><span>DS-buddy</span></a>
   <nav><a class="on" href="../en/">Short</a><a href="../en/deep/">Long read</a><a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
@@ -33,48 +33,24 @@
   <article>
     <header>
       <p class="kick">Notes on building AI products</p>
-      <h1>A really good agent product doesn't need the agent abstraction</h1>
+      <h1>Introducing DS-buddy: say the goal, make the calls</h1>
       <p class="meta">DS-buddy <i>·</i> 16 Nov 2026</p>
-      <p class="dek">DS-buddy is open source today. This post records how my view of multi-agent changed while I built it, including the wrong turns.</p>
+      
     </header>
-<p>Hi everyone.</p>
-<p>DS-buddy is a plugin for DeepSeek Harness. You state a goal, it splits the goal into a few tasks, does them, and brings the finished work back to you.</p>
-<p>The reason I built it is simple. When I worked with several agents at once, I spent most of my time being glue: briefing this one on the background, carrying that one's conclusion over, watching which one was stuck. The work that was actually mine, thinking the direction through, was what I had no time for.</p>
-<h2 id="s1">At first I gave the AI job titles too</h2>
-<p>In an early version every project was a group chat. It had a project assistant that created roles as needed. Each role had a name, a persona of a sentence or two, and an avatar of its own. I @-mentioned them in the chat to get work done.</p>
-<p>It was the natural thing to do. We are used to organising work through people: who owns what, who to ask.</p>
-<p>By the time I went back and counted, 18 roles had been created across 12 projects. But I found I didn't care which role was doing the work. I only cared how far the job had got and which model was on it.</p>
-<p>Then I read the code. A role contributed three things: a name, a sentence or two of persona, and a default model. The session that did the work was opened per task, not per role. In other words, what was really doing the work was the context of that job plus a model. The role was a label stuck on top.</p>
-<p>I deleted the feature that creates roles. A project now has one executor, and the interface shows the model it runs on.</p>
-<p>It changed how I see the whole thing: managing agents is really managing context.</p>
-<h2 id="s2">Messages get distorted when they are passed on</h2>
-<p>With the roles gone, one relay was left: I tell the personal assistant about a job and it hands the job to a project.</p>
-<p>On the morning of the release I went through a fresh install from the start and ran one comparison along the way. The same sentence, said directly to the project, opened two tasks after 16 seconds, and the first result came back at 48 seconds. Said to the personal assistant and handed on, it opened a single combined task that took 11.6 minutes to deliver.</p>
-<p>The cause was that the assistant rewrote my words in the handoff and added a few requirements I had never stated. Downstream they were taken as my own words and followed.</p>
-<p>Now a handoff may only quote my own words, and code checks that the sentence really is mine. Anything the assistant wants to add is marked separately and doesn't count as my request. When I tested again, two tasks were open within half a minute of the handoff.</p>
-<p>Messages get distorted between people, and they do between agents too. That is also why fork works better than multi-agent most of the time: a fork carries the whole context across, with no paraphrase.</p>
-<h2 id="s3">One context per job</h2>
-<p>A fork has a cost too. It carries everything, so the longer the main conversation, the more it carries. Past a point the conversation has to be compacted, and details are lost.</p>
-<p>So what I do now is organise context by task from the start, and not count on it growing by itself inside one conversation.</p>
-<p>I say three things only: what to do, where the context is, and what the standard is. The AI splits that into tasks, and each task carries a record of its own: the goal, my own words, what counts as done, and how far it has got. Think of it roughly as a goal file.</p>
-<p>That record is what gets maintained over time. The agent that works on it is temporary: by default a session in DeepSeek Harness, and it can be switched to Claude Code per task. After a switch, whoever takes over receives the same record.</p>
-<p>How to put the context together at each start, and how to use the cache to save tokens, I haven't thought through yet, and I'm not sure the current way is the best. But these shouldn't be details a user has to worry about.</p>
-<h2 id="s4">Context has to come in by itself</h2>
-<p>By this point the AI was splitting the tasks, but I was still feeding the background: copying a chat thread, pasting a file, explaining where things stood yesterday.</p>
-<p>So I added context collection. What is on screen is read once a minute, and Feishu messages every two minutes. Every 10 minutes this is organised into a timeline, filed under a project when it is clear which one. Files on the computer are read when needed. All of it is read-only and can be turned off at any time.</p>
-<p>Collecting context automatically is nothing new. Screenpipe, AirJelly, Littlebird and the Computer History in Codex all do it. DS-buddy reads the screen through Screenpipe. The extra step I want is to connect that context to getting work done. At night it reviews the day and leaves up to three cards for the morning, telling me what could be done and what is worth a look.</p>
-<h2 id="s5">How others do it</h2>
-<p>Multica and Raft treat agents as teammates and organise the collaboration with tickets and group chat. Their underlying design is good and I borrowed a fair amount, such as a lasting record for each job and results that land where everyone can see them. Claude Projects lets several conversations in a project share one set of material, but only with Claude's models.</p>
-<p>I differ from Multica and Raft on one point only: I don't want people to manage agents. How a job is split, who does it and what background it carries should be the AI's business.</p>
-<h2 id="s6">What it looks like now, and what isn't done</h2>
-<p>Open DS-buddy today and all you face is projects, tasks and one board called Waiting on you. The board has three lanes: waiting on you, in progress, done today. The first holds what needs you: decisions, acceptances and failures. A job is done only after you accept it. I want people to speak only at those points and stop carrying information around.</p>
-<p>The assistant that is always there is called Tacit by default, as in tacit understanding. I want it to know the background of a job before you open your mouth.</p>
-<p>Plenty isn't done yet:</p>
-<ul><li>Tasks are split by the AI, but a project is still only created when you ask for one.</li><li>The timeline isn't always right. Neighbouring stretches are easily written up as the same activity.</li><li>Switching the executor only takes effect after a turn ends. Codex can be selected, but hasn't been verified through a complete task.</li></ul>
-<p>The code is on <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>. Screenshots and a detailed comparison with other products are in <a href="deep/">the long version</a>. Come and try it, and tell me where it doesn't hold up.</p>
+<p>This past year, agent products have been turning into teams. Agents get names, roles, channels and tickets of their own, and the person sits in the middle @-mentioning them. The agents keep getting more capable, and the people using them keep getting busier: briefing this one on the background, carrying that one's conclusion over, watching which one has finished and which one is stuck.</p>
+<p>I see it differently. Take an agent apart and it is a piece of context plus a model. Managing agents is managing context. A really good agent product doesn't need to put the agent layer in front of people.</p>
+<p>DS-buddy is built on that idea, as an open-source plugin for DeepSeek Harness. You state a goal, it asks about whatever is unclear, splits the goal into a few tasks that run at the same time, and brings the finished work back to you. All you face is projects, tasks and one board called Waiting on you.</p>
+<p>Here is what that means for your day.</p>
+<p><strong>You say three things.</strong> What to do, where the context is, and what the standard is. For example: "Using the job description, write a second-round interview set, interview.md: 3 questions on motion and interaction detail, each with scoring points." It opens a task, takes that sentence and that file along, and what comes back is interview.md.</p>
+<p><strong>Each job has a context of its own.</strong> Every task carries a record: the goal, your own words, what counts as done, and how far it has got. The agents doing the work are only tools: by default a DeepSeek Harness session, and a task can be switched to Claude Code without losing the record. Your words go in verbatim. In an early version the assistant rewrote my words in a handoff and added requirements I had never stated, and a job that takes a minute or two dragged on for 11.6 minutes. Now a handoff may only quote the original, and code checks it.</p>
+<p><strong>Context comes in by itself.</strong> What you do on screen and the messages in Feishu are organised into a timeline every 10 minutes, filed under a project when it is clear which one. Files on your computer are read when needed. All of it is read-only and can be turned off at any time.</p>
+<p><strong>It comes to you only when it is your turn.</strong> Decisions, acceptances, failures, and messages someone is waiting for you to answer are all on Waiting on you. At night it reviews the day and leaves up to three cards for the morning. A job is done only after you accept it.</p>
+<p>The assistant that is always there is called Tacit by default, as in tacit understanding: it should know the background of a job before you open your mouth. It remembers only what you said yourself, and it never makes a call or sends a message for you.</p>
+<p>DS-buddy is early. Projects are still created by you, Codex as an executor hasn't been verified through a complete task, and the interface is in Chinese only. It needs DeepSeek Harness 0.2.x and Node 24. Installation is in the README on <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>, under the MIT license. Why it is designed this way is in <a href="deep/">the long version</a>.</p>
+<p>Say the goal. Make the calls.</p>
   </article>
 </main>
-<aside class="toc" aria-label="On this page"><div><a class="l2" href="#s1">At first I gave the AI job titles too</a><a class="l2" href="#s2">Messages get distorted when they are passed on</a><a class="l2" href="#s3">One context per job</a><a class="l2" href="#s4">Context has to come in by itself</a><a class="l2" href="#s5">How others do it</a><a class="l2" href="#s6">What it looks like now, and what isn&#x27;t done</a></div></aside>
+
 </div>
 <script>
 document.querySelector(".theme").addEventListener("click",function(){var r=document.documentElement,d=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=d==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("tacit-theme",n)}catch(e){}});
