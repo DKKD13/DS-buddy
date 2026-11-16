@@ -1,28 +1,40 @@
+![Managing agents is managing context](docs/site/blog/img/hero.jpg)
+
 # DS-buddy
 
 **Exploring the best way for people and AI to work together.**
 
-[中文](README.md)
+[Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/) · [Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) · [Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
 
-Agents keep getting more capable, and people keep getting busier.
+## Your next agent product may not need agents
 
-When you build an AI application today, the first and most central problem is lowering the bandwidth of communication between people and AI. The dilemma we keep facing is that we are run off our feet, playing the role of glue most of the time, and short of real time to think and set the right direction.
+Over the past six months, my strongest impression has been that agents keep getting more capable. On one hand I am amazed at how far AI has come; on the other, my own efficiency has improved only a little, and I often find myself running between several conversations.
 
-Before talking about multi-agent, let's start with one question.
+The most central and urgent problem for AI applications today is lowering the bandwidth of communication between people and AI. On one hand, we need a good way to hand context to the AI; on the other, people shouldn't have to spend more of their attention to do it.
 
-## Fork vs multi-agent: managing agents is, at heart, managing context
+The dilemma we keep facing is that we are run off our feet, playing the role of glue most of the time, carrying context around, and short of real time to think and set the right direction.
+
+Agent products today are built by carrying the experience of organising people over to AI. They hope to open more and more agents, without considering that so-called multi-agent collaboration then degrades into "several roles that can talk". It looks like collaboration, but at heart it is still a simulation of a human meeting room.
+
+So before talking about multi-agent, we have to start with one question.
+
+### Do we really need that many agents?
+
+**Fork vs subagent: managing agents is, at heart, managing context.**
 
 When do you need a fork, and when do you need multiple agents? The answer is that most of the time we don't need multiple agents.
 
-A fork shares: the new branch is born with the whole memory of the main conversation. Multi-agent passes things on: compress, retell, understand again, and every extra layer of passing loses a little more. Just as messages passed between people pick up errors, multiple agents pick up errors too, and they add a communication cost we don't need.
+A fork shares: the new branch is born with the context of the main conversation. Multi-agent passes things on: compress, retell, understand again, and every extra layer of passing loses a little more. Just as messages passed between people pick up errors, multiple agents pick up errors too, and they add a communication cost we don't need.
 
-Why did everyone's abstraction of their scenarios go to agents first? Because we are used to organising context through people, each with a job of their own. But for an agent, all we need is context and a model (an agent is part context, part model). Agents differ from each other far less than people do; what matters more is the difference between models. The agent is an unnecessary layer of abstraction, and managing agents is, at heart, managing context.
+But a fork alone isn't enough: the main conversation keeps swelling. Context that grows by itself in a conversation tends to get worse and worse: small talk, stale conclusions and the noise of work in progress all stay in and keep using up the model's attention, and compression alone can't fix that.
 
-But a fork can't save you from something else: the main conversation keeps swelling. Context that grows by itself in a conversation tends to get worse and worse: small talk, stale conclusions and the noise of work in progress all stay in, and keep using up the model's attention. So the best answer for context has to be designed consciously from the start, rather than refined as the conversation goes on.
+Managing agents is, at heart, managing context. In a meeting-room style of multi-agent, each agent adds opinions from the point of view of a human job, but the task itself is never organised into a structure that can be delivered, verified and put together. That only moves the human form of organisation onto models, instead of designing the system around what agents can and can't do.
 
-## Context organised around the goal (the loop): runtimes and sessions are only temporary tools
+### The answer: context management built around the goal (the loop)
 
-For every core thread, the way of working has turned towards the goal, that is, the loop.
+**Runtimes and sessions are only temporary tools; a vague goal is broken down into AI tasks that can close their own loop.**
+
+AI needs a clear goal and acceptance criteria. For every core thread, the way of working has turned towards the goal, that is, the loop. So the best answer for context has to be designed consciously from the start, rather than refined as the conversation goes on. A task that is really fit to hand to another agent should be like a complete sub-problem that can be delivered on its own. It doesn't have to be big, but it has to be complete. DS-buddy deliberately has an agent maintain the organisation of each task, and offers automated tasks (tasks that run again on a schedule) to help you build your own task loops smoothly.
 
 For each task, the problem with today's sessions is that most of the valuable context gets buried in the moving conversation. Yet the fixed index of a task is simple. It is usually a clear goal, where the repository is, the acceptance standard, and where the documents are.
 
@@ -30,7 +42,7 @@ So people only need to say three things clearly: what to do, where the context i
 
 As for the execution, the temporary agents are really tools. Their state is fragile; each is just a runtime, and the context is injected again each time. They hardly need maintaining.
 
-## Hide the configuration details: trust the model, offer monitoring, leave the rest to the AI
+### Hide the configuration details: trust the model, offer a board instead of forms, leave the rest to the AI
 
 Similar multi-agent products on the market today all expose too much. Multica and Raft offer a good way to organise, through group chats and tickets being passed along, and their underlying abstractions are well made; I borrowed their thinking and the way they are built. But for a person, setting up channels, configuring roles and dividing up the work is hard work in itself.
 
@@ -38,7 +50,9 @@ The details need wrapping. How the context is assembled, at which layer the cach
 
 So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible: every task has a page of details, and whatever needs you is on one board called Waiting on you.
 
-## Collecting context fully: freeing people from carrying information around
+### Collecting context fully
+
+**Freeing people from carrying information around, towards an always-on AI that really understands you.**
 
 For an AI to take over this layer, it first needs to take in enough of your context. That brings in our most important design: collecting context. What you do on screen and the messages in Feishu come in continuously and are organised into a timeline every 10 minutes; files on your computer are read when needed. All of it is read-only and can be turned off at any time.
 
@@ -48,13 +62,13 @@ I think this is how we will work in future: people express preferences and value
 
 The core assistant in DS-buddy is called Tacit by default, meaning tacit understanding. I think a really good buddy should know all the relevant context before you open your mouth.
 
+### The biggest challenge: breaking work down well
+
+The biggest problem today is whether the coordinator, the assistant that splits the work, can plan the division and the size of tasks soundly. So we recommend a strong model such as Claude Opus 5.5 or GPT-6 Astra for the personal assistant, the one that sets things up for you, to split tasks as well as possible. As models get smarter and the skills for dividing work get refined, this keeps getting better.
+
+Come and try it.
+
 DS-buddy: your next agent product may not need agents.
-
-Read next: [the architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) explains how it is built, and [the guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/) explains how to work with Tacit.
-
-[Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) · [Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/) · [Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
-
-![One request, from the first sentence to finished work](docs/launch/demo.gif)
 
 ## Install
 
@@ -67,13 +81,13 @@ dsh plugin --profile web add "$(pwd)"    # add the plugin to DeepSeek Harness
 dsh --profile web                        # start it and open the address it prints
 ```
 
-The sidebar gains a personal assistant and projects. Create a project and state your first goal. The model is the one you configured in DeepSeek Harness. Step by step: [the guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/), or [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md) (Chinese).
+The sidebar gains a personal assistant and projects. Create a project and state your first goal. Step by step: [the guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/).
 
 ## Docs
 
-- Getting started: [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md)
-- Features: [`docs/FEATURES.md`](docs/FEATURES.md)
-- Test report: [`docs/TESTING.md`](docs/TESTING.md), with every finding and what was not verified
+- [Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/): how to work with Tacit
+- [Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/): how it is built
+- [Getting started](docs/GETTING-STARTED.md), [features](docs/FEATURES.md) and [test report](docs/TESTING.md) (Chinese)
 
 ## Where it stands
 
