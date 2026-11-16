@@ -46,11 +46,15 @@ The details need wrapping. How the context is assembled, at which layer the cach
 
 So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible: every task has a page of details, and whatever needs you is on one board called Waiting on you.
 
+![The Waiting on you board: tasks and reminders waiting on you, and a task in progress](img/shot-board-banner.jpg)
+
 ## Collecting context fully
 
 **Freeing people from carrying information around, towards an always-on AI that really understands you.**
 
 For an AI to take over this layer, it first needs to take in enough of your context. That brings in our most important design: collecting context. What you do on screen and the messages in Feishu come in continuously and are organised into a timeline every 10 minutes; files on your computer are read when needed. All of it is read-only and can be turned off at any time.
+
+![The computer timeline, with the read-only source settings: Feishu and computer files can be paused or limited](img/shot-collect-banner.jpg)
 
 Capturing context automatically isn't new. Screenpipe is the best-known example, along with AirJelly, Littlebird and the Computer History built into Codex, and they have existed for a while. But most of them haven't closed the loop from context to action.
 
