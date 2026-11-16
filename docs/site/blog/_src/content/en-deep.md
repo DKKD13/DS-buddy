@@ -1,6 +1,6 @@
 ^ Notes on building AI products · Long read
 # How DS-buddy thinks: from multi-agent to context
-> The short post gave only the conclusions. This one lays out the grounds: which abstraction each product chose, how context actually travels between agents, and how each point landed in DS-buddy.
+> The short post tells what happened. This one lays out the grounds: which abstraction each product chose, how context actually travels between agents, and how each point landed in DS-buddy.
 
 Hi everyone. This is the long version of [the short post](../). Same line of thought, with comparisons and screenshots added.
 

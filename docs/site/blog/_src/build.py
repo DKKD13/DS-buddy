@@ -169,12 +169,17 @@ def convert(md, lang, rel=""):
 # ---------------------------------------------------------------- page
 UI = {"zh": dict(lang="zh-CN", post="短文", deep="长文", toc="目录", date="2026/11/16", theme="切换深浅色", by="DS-buddy"),
       "en": dict(lang="en", post="Short", deep="Long read", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="DS-buddy")}
+SITE = "https://dkkd13.github.io/tacit-dsh/site/blog/"   # where the pages are served; change it if the repository is renamed
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
 def page(lang, title, dek, body, toc, rel, sub, kicker=""):
     """rel: path from this page back to the site root; sub: "" for the launch post, "deep/" for the teardown."""
     u = UI[lang]; here = lambda path: path or "./"
     base = rel + ("en/" if lang == "en" else "")                     # this language's home
     zh_href, en_href = here(rel + sub), rel + "en/" + sub
+    url = SITE + ("en/" if lang == "en" else "") + sub
+    share = "".join(f'<meta property="og:{k}" content="{html.escape(v, quote=True)}">\n' for k, v in (("type", "article"), ("site_name", "DS-buddy"), ("title", title), ("description", dek), ("url", url)))
+    if lang == "zh": share += f'<meta property="og:image" content="{SITE}img/film-closing.jpg">\n<meta name="twitter:card" content="summary_large_image">\n'   # the picture carries Chinese text
+    else: share += '<meta name="twitter:card" content="summary">\n'
     ON = ' class="on"'
     nav = "".join("<a" + (ON if sub == s2 else "") + ' href="' + here(base + s2) + '">' + label + "</a>" for s2, label in (("", u["post"]), ("deep/", u["deep"])))
     toc_html = "".join(f'<a class="l{lv}" href="#{hid}">{html.escape(t)}</a>' for lv, hid, t in toc)
@@ -186,7 +191,7 @@ def page(lang, title, dek, body, toc, rel, sub, kicker=""):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)} | DS-buddy</title>
 <meta name="description" content="{html.escape(dek, quote=True)}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+{share}<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{rel}style.css">
