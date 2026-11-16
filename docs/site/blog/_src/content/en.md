@@ -2,7 +2,7 @@
 # Your next agent product may not need agents
 > Exploring the best way for people and AI to work together
 
-![Managing agents is managing context: one context card plus a model](img/hero.jpg)
+![A DS-buddy task page: the executor's result on the left, the job's context on the right](img/hero.jpg)
 
 Over the past six months, my strongest impression has been that agents keep getting more capable. On one hand I am amazed at how far AI has come; on the other, my own efficiency has improved only a little, and I often find myself running between several conversations.
 
