@@ -4,7 +4,7 @@
 
 Tacit 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的一个开源插件。你说一句目标，它把没说清的问清楚，拆成几个任务同时去做，做完把成品交到你面前。中间只有需要你做决定的时候，才来找你。
 
-[产品页](https://dkkd13.github.io/tacit-dsh/site/) · [发布文](https://dkkd13.github.io/tacit-dsh/site/blog/) · [65 秒演示片](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [English](README.en.md)
+[产品页](https://dkkd13.github.io/tacit-dsh/site/) · [发布文](https://dkkd13.github.io/tacit-dsh/site/blog/) · [85 秒演示片](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [English](README.en.md)
 
 ![一条任务从交代到交付](docs/launch/demo.gif)
 

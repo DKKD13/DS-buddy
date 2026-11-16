@@ -4,7 +4,7 @@
 
 Tacit is an open-source plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). You state a goal in one sentence. It asks about what you left unclear, splits the work into tasks that run at the same time, and brings finished work back to you. In between, it comes to you only when a decision is yours to make.
 
-[Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Launch post](https://dkkd13.github.io/tacit-dsh/site/blog/en/) · [65-second film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
+[Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Launch post](https://dkkd13.github.io/tacit-dsh/site/blog/en/) · [85-second film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
 
 ![One request, from the first sentence to finished work](docs/launch/demo.gif)
 
