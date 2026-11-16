@@ -46,7 +46,7 @@ Tacit 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) �
 ```sh
 git clone https://github.com/DKKD13/tacit-dsh
 cd tacit-dsh/plugin
-npm test                                 # 484 个单测，可以跳过
+npm test                                 # 485 个单测，可以跳过
 dsh plugin --profile web add "$(pwd)"    # 把插件装进 DeepSeek Harness
 dsh --profile web                        # 启动，在浏览器里打开它给的地址
 ```
@@ -75,7 +75,7 @@ dsh --profile web                        # 启动，在浏览器里打开它给�
 
 ## 现在到哪一步了
 
-- 1.0 版，MIT 许可证。484 项自动化测试，Linux 和 macOS 上都跑过。
+- 1.0 版，MIT 许可证。485 项自动化测试，Linux 和 macOS 上都跑过。
 - 只能跑在 DeepSeek Harness 里。界面目前只有中文。飞书只读。
 - Claude Code 当执行者实跑验证过。Codex 的切换和启动试过，用它自己的模型跑完一个任务还没有验证到。
 - Claude Code 和 Codex 当执行者时不弹权限确认，也没有沙箱：你的系统用户能读写的，它都能读写。

@@ -73,3 +73,13 @@ test('the @ menu also leaves out the plugin\'s own plumbing conversations', () =
   ]
   same(client.titledOnly(rows).map(r => r.name), ['改版首页首屏', '我的记忆助理笔记.md'])
 })
+
+test('the suggested lines above the composer offer each line once, also when one task holds two open decisions', () => {
+  const waiting = [
+    { title: '写媒体问答', decision: { id: 'd1' }, ask: '问答用哪种口径？' },
+    { title: '写媒体问答', decision: { id: 'd2' }, ask: '价格要不要写？' },
+    { title: '做邀请函', ask: '交付，待验收' },
+  ]
+  same(client.suggestionsFor(waiting, new Set()), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了', '今天做了什么'])
+  same(client.suggestionsFor(waiting, new Set(['今天做了什么'])), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了'], 'a line already said is not offered again')
+})

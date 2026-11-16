@@ -2858,11 +2858,12 @@ window.__ModuleLoader__.load({
 
 		/** Suggested next lines for the owner: answer a decision, accept a delivery, ask about today. */
 		function suggestionsFor(waiting, said) {
-			return [
+			// A task with two open decisions gives the same line twice; each line is offered once.
+			return [...new Set([
 				...waiting.filter(x => x.decision).map(x => `「${x.title}」按推荐的回复`),
 				...waiting.filter(x => !x.decision && x.ask.startsWith("交付")).map(x => `帮我把「${x.title}」验收了`),
 				"今天做了什么",
-			].filter(s => !said.has(s)).slice(0, 4);
+			])].filter(s => !said.has(s)).slice(0, 4);
 		}
 
 		const HISTORY_GAP = 30 * 60e3, HISTORY_BURST = 15 * 60e3;
@@ -5374,7 +5375,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 		exports.skillDiff = skillDiff; exports.kanbanLine = kanbanLine; exports.STATUS_LOOK = STATUS_LOOK; exports.bannerOf = bannerOf; exports.timelineRows = timelineRows; exports.deliveredFiles = deliveredFiles; exports.sizeLabel = sizeLabel;
 		exports.mentionCandidates = mentionCandidates; exports.deliveryOrder = deliveryOrder; exports.titledOnly = titledOnly; exports.mentionClipboard = mentionClipboard; exports.mentionText = mentionText; exports.mentionNames = mentionNames; exports.mentionRule = mentionRule; exports.iconSpec = iconSpec; exports.modelName = modelName; exports.executorOf = executorOf; exports.shownName = shownName; exports.isProjectExecutor = isProjectExecutor; exports.taskStatus = taskStatus; exports.projectLook = projectLook; exports.layoutTimeline = layoutTimeline; exports.readWake = readWake; exports.wakeMessages = wakeMessages; exports.typedInSession = typedInSession; exports.workspaceScene = workspaceScene; exports.miraScene = miraScene; exports.sceneShift = sceneShift; exports.isTemplate = isTemplate; exports.lookCells = lookCells; exports.lookPortrait = lookPortrait; exports.bestTemplate = bestTemplate; exports.hotkeyFrom = hotkeyFrom; exports.hotkeyMatches = hotkeyMatches; exports.hotkeyLabel = hotkeyLabel; exports.LOOK_TEMPLATES = LOOK_TEMPLATES; exports.LINE_BODIES = LINE_BODIES; exports.LINE_ACCESSORIES = LINE_ACCESSORIES; exports.ICONS = ICONS; exports.PROJECT_TINTS = PROJECT_TINTS; exports.PROJECT_ICON_NAMES = PROJECT_ICON_NAMES; exports.PROJECT_ICON_SHAPES = PROJECT_ICON_SHAPES;
 		exports.createRevisionFeed = createRevisionFeed;
-		exports.pickAsk = pickAsk; exports.inboxProjects = inboxProjects; exports.inboxNotes = inboxNotes; exports.noteAsks = noteAsks;
+		exports.pickAsk = pickAsk; exports.inboxProjects = inboxProjects; exports.inboxNotes = inboxNotes; exports.noteAsks = noteAsks; exports.suggestionsFor = suggestionsFor;
 		return module.exports;
 	}
 });
