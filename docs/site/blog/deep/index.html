@@ -10,7 +10,7 @@
 <meta property="og:title" content="管理 agent，就是管理 context">
 <meta property="og:description" content="过去一年，单任务的 agent 已经证明，模型可以用工具把一件复杂的事做完，越来越少需要人盯着每一步。多个 agent 同时干活也变得可行。人的位置随之上移，从执行移到决策和验收。">
 <meta property="og:url" content="https://dkkd13.github.io/tacit-dsh/site/blog/deep/">
-<meta property="og:image" content="https://dkkd13.github.io/tacit-dsh/site/blog/img/hero.jpg">
+<meta property="og:image" content="https://dkkd13.github.io/tacit-dsh/site/blog/img/hero-timeline.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,14 +76,14 @@
 <ul><li><strong>屏幕</strong>：通过本机的 Screenpipe，每分钟读一次看到的每个窗口，只取文字，每个窗口最多 3,000 字，截图不离开本机。</li><li><strong>飞书</strong>：每 2 分钟读一次消息。</li><li><strong>文件</strong>：电脑上的一个小程序主动连接 DS-buddy，按需读取文件。可读范围由电脑一侧决定，可以是指定的文件夹，也可以是整个主目录（不含 Library 和隐藏目录）；浏览器 cookie、登录状态这类文件一律拒绝。</li></ul>
 <p>原始记录写入存储，不直接进入窗口。每 10 分钟切成一窗，连同上一段活动和项目列表，交给一次小模型调用，写出 0 到 3 件事，用用户自己的任务说法。明显属于某个项目的才标上项目，否则留空。代码核对每件事的出处，必须指回这一窗里的原始记录，指不回去的丢弃。窗口路径落在项目文件夹里的原始记录，直接按路径归到项目。</p>
 <figure class="dia"><svg viewBox="0 0 680 206" role="img" aria-label="时间线的生成：原始记录按 10 分钟分窗，由小模型整理，再由代码核对出处。"><defs><marker id="ar-history" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-h" d="M0 0L10 5L0 10z"/></marker><marker id="ar-historys" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="d-h" d="M10 0L0 5L10 10z"/></marker></defs><rect class="d-n" x="10.0" y="29.0" width="140" height="30" rx="6"/><text class="d-t" x="80" y="48.5" text-anchor="middle">屏幕：每分钟</text><rect class="d-n" x="10.0" y="77.0" width="140" height="30" rx="6"/><text class="d-t" x="80" y="96.5" text-anchor="middle">飞书：每 2 分钟</text><path class="d-e" d="M150 44 H168"/><path class="d-e" d="M150 92 H168"/><path class="d-e" d="M168 44 V92"/><path class="d-e" d="M168 68 H186" marker-end="url(#ar-history)"/><rect class="d-ctx" x="188.0" y="51.0" width="140" height="34" rx="6"/><text class="d-t" x="258" y="72.5" text-anchor="middle">原始记录</text><path class="d-e" d="M328 68 H350" marker-end="url(#ar-history)"/><rect class="d-n" x="352.0" y="51.0" width="136" height="34" rx="6"/><text class="d-t" x="420" y="72.5" text-anchor="middle">每 10 分钟一窗</text><path class="d-e" d="M488 68 H508" marker-end="url(#ar-history)"/><rect class="d-n" x="510.0" y="51.0" width="160" height="34" rx="6"/><text class="d-t" x="590" y="72.5" text-anchor="middle">小模型：0 到 3 件事</text><text class="d-m" x="590" y="38" text-anchor="middle">带上一段活动和项目列表</text><path class="d-e" d="M590 85 V139" marker-end="url(#ar-history)"/><rect class="d-n" x="510.0" y="141.0" width="160" height="34" rx="6"/><text class="d-t" x="590" y="162.5" text-anchor="middle">代码核对出处</text><text class="d-m" x="590" y="192" text-anchor="middle">指不回原始记录的丢弃</text><path class="d-e" d="M510 158 H490" marker-end="url(#ar-history)"/><rect class="d-ctx" x="352.0" y="141.0" width="136" height="34" rx="6"/><text class="d-t" x="420" y="162.5" text-anchor="middle">时间线</text><path class="d-e" d="M352 158 H330" marker-end="url(#ar-history)"/><rect class="d-n" x="188.0" y="141.0" width="140" height="34" rx="6"/><text class="d-t" x="258" y="162.5" text-anchor="middle">个人助理读取</text></svg><figcaption>时间线的生成：原始记录按 10 分钟分窗，由小模型整理，再由代码核对出处。</figcaption></figure>
-<figure class="shot"><a href="../img/shot-timeline.jpg"><img src="../img/shot-timeline.jpg" alt="时间线：每段活动带着用到的应用和所属项目" loading="lazy"></a><figcaption>时间线（演示数据）。</figcaption></figure>
+<figure class="shot"><a href="../img/timeline-apps.jpg"><img src="../img/timeline-apps.jpg" alt="时间线：每段活动带着用到的应用和所属项目" loading="lazy"></a><figcaption>时间线（演示数据）。</figcaption></figure>
 <p>时间线只供个人助理读取，每一条都能用工具核对出处。个人助理把一件事交给项目时，带过去的是用户的原话；时间线和记忆只作为带出处的参考。</p>
 <p>屏幕采集本身并不新鲜，Screenpipe、AirJelly、Littlebird 和 Codex 的 Computer History 都在做，多半停在记录和检索。DS-buddy 多走的一步，是把采集到的上下文接到任务上：从观察里提出值得做的事，交给项目执行，做完回到看板等用户拍板。</p>
 <h2 id="s5">5. 面向人的交互</h2>
 <h3 id="s5-1">5.1 待你决定</h3>
 <p>多件事并行之后，人的注意力是瓶颈。DS-buddy 把需要用户的事收在一块跨项目的看板上，分三栏：等你、进行中、今天完成。「等你」只放四类：要拍板的、等验收的、出错的、别人在等回复的消息（飞书里有人单聊或 @ 了用户，半小时后仍未回复）。</p>
 <p>卡片上没有按钮。点任务卡打开任务；点提醒卡，一句话写进输入框，用户修改后再发出。所有动作都落成用户说的一句话，和平常的对话走同一条路径，原话也就留了下来。</p>
-<figure class="shot"><a href="../img/shot-board.jpg"><img src="../img/shot-board.jpg" alt="待你决定：任务卡和一张飞书提醒卡" loading="lazy"></a><figcaption>待你决定（演示数据）。</figcaption></figure>
+<figure class="shot"><a href="../img/board-feishu.jpg"><img src="../img/board-feishu.jpg" alt="待你决定：任务卡和一张飞书提醒卡" loading="lazy"></a><figcaption>待你决定（演示数据）。</figcaption></figure>
 <h3 id="s5-2">5.2 完成的定义</h3>
 <p>做完没有，和是否还在运行，是两件事。排队不能当作正在执行，一轮结束也不等于这件事解决了。一件事只有在用户验收之后才算完成；合并代码这类动作，要求引用用户针对这次交付的验收原话，或由用户亲手点「验收通过」。</p>
 <h3 id="s5-3">5.3 夜间整理</h3>

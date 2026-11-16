@@ -87,7 +87,7 @@ All of these are read-only and can be turned off at any time:
 - **Files on your computer**: assistant settings, computer files. Choose specific folders or all files, or pause it.
 - **Screen**: run the DS-buddy device program on a computer that has Screenpipe. It reads the text of the windows once a minute and sends text only; screenshots stay on the computer. Every 10 minutes the activity is organised into a timeline, filed under a project when it is clear which one.
 
-![The timeline: each activity with the apps used and the project it belongs to](img/shot-timeline.jpg "The timeline.")
+![The timeline: each activity with the apps used and the project it belongs to](img/timeline-apps.jpg "The timeline.")
 
 ## 9. Memory, models, and the night review
 

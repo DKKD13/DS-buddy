@@ -89,7 +89,7 @@ Raw records are written to storage, not into the window. Every 10 minutes a wind
 
 {{fig:history|How the timeline is made: raw records are cut into 10-minute windows, organised by a small model, and checked against their sources by code.}}
 
-![The timeline: each activity with the apps used and the project it belongs to](img/shot-timeline.jpg "The timeline (demo data; the interface is in Chinese).")
+![The timeline: each activity with the apps used and the project it belongs to](img/timeline-apps.jpg "The timeline (demo data; the interface is in Chinese).")
 
 The timeline is read only by the personal assistant, and every entry can be checked against its source with a tool. When the personal assistant hands a job to a project, what goes across is the user's own words; the timeline and memory go along only as references with their sources.
 
@@ -103,7 +103,7 @@ Once several jobs run in parallel, a person's attention is the bottleneck. DS-bu
 
 Cards have no buttons. Clicking a task card opens the task; clicking a reminder card drafts a sentence in the composer, which the user edits and sends. Every action ends up as a sentence the user says, so it takes the same path as ordinary conversation and the user's own words are kept.
 
-![Waiting on you: task cards and a Feishu reminder card](img/shot-board.jpg "Waiting on you (demo data).")
+![Waiting on you: task cards and a Feishu reminder card](img/board-feishu.jpg "Waiting on you (demo data).")
 
 ### 5.2 What counts as done
 

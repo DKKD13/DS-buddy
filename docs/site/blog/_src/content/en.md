@@ -2,7 +2,7 @@
 # Your next agent product may not need agents
 > Exploring the best way for people and AI to work together
 
-![A DS-buddy task page: the executor's result on the left, the job's context on the right](img/hero.jpg)
+![The DS-buddy timeline: what you did on the computer, each entry with the apps it used and the project it belongs to](img/hero-timeline.jpg)
 
 Over the past six months, my strongest impression has been that agents keep getting more capable. On one hand I am amazed at how far AI has come; on the other, my own efficiency has improved only a little, and I often find myself running between several conversations.
 
@@ -54,7 +54,7 @@ So in DS-buddy there are no agents to name and no skills to configure. But how f
 
 For an AI to take over this layer, it first needs to take in enough of your context. That brings in our most important design: collecting context. What you do on screen and the messages in Feishu come in continuously and are organised into a timeline every 10 minutes; files on your computer are read when needed. All of it is read-only and can be turned off at any time.
 
-![The computer timeline, with the read-only source settings: Feishu and computer files can be paused or limited](img/shot-collect-banner.jpg)
+![Asking Tacit about a line from an interview: it finds the source in what the screen recorded; on the right, the read-only source settings](img/recall-banner.jpg)
 
 Capturing context automatically isn't new. Screenpipe is the best-known example, along with AirJelly, Littlebird and the Computer History built into Codex, and they have existed for a while. But most of them haven't closed the loop from context to action.
 
