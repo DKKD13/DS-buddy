@@ -75,9 +75,11 @@ test('the @ menu also leaves out the plugin\'s own plumbing conversations', () =
 
 test('the suggested lines above the composer offer each line once, also when one task holds two open decisions', () => {
   const waiting = [
-    { title: '写媒体问答', decision: { id: 'd1' }, ask: '问答用哪种口径？' },
-    { title: '写媒体问答', decision: { id: 'd2' }, ask: '价格要不要写？' },
-    { title: '做邀请函', ask: '交付，待验收' },
+    // The shape useWaiting gives: a delivery says 「已交付，待验收」. This test once fed 「交付，待验收」, which the page
+    // never produces, so the acceptance line it checked never appeared for real (release gate G06, 2026-11-16).
+    { title: '写媒体问答', kind: 'decision', decision: { id: 'd1' }, ask: '问答用哪种口径？' },
+    { title: '写媒体问答', kind: 'decision', decision: { id: 'd2' }, ask: '价格要不要写？' },
+    { title: '做邀请函', kind: 'review', ask: '已交付，待验收' },
   ]
   same(client.suggestionsFor(waiting, new Set()), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了', '今天做了什么'])
   same(client.suggestionsFor(waiting, new Set(['今天做了什么'])), ['「写媒体问答」按推荐的回复', '帮我把「做邀请函」验收了'], 'a line already said is not offered again')

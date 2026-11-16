@@ -862,7 +862,7 @@ window.__ModuleLoader__.load({
 			const newRequest = () => window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
 			const [requestId, setRequestId] = useState(newRequest);
 			const [title, setTitle] = useState("");
-			const [prompt, setPrompt] = useState("检查项目进展；只在有新结果、失败或需要用户处理时汇报，不重复已完成的事。");
+			const [prompt, setPrompt] = useState("检查项目进展；只在有新结果、失败或需要我处理时汇报，不重复已完成的事。");
 			const [target, setTarget] = useState("coordinator");
 			const [kind, setKind] = useState("every");
 			const [minutes, setMinutes] = useState(60);
@@ -2217,11 +2217,13 @@ window.__ModuleLoader__.load({
 			};
 		}
 		function SidePanel({ tabs, info, guides, onHide, children, wide, onWide }) {
+			const list = useRef(null);
+			useEffect(() => { list.current?.querySelector(".mp4-tab-on")?.scrollIntoView({ block: "nearest", inline: "nearest" }); }, [tabs.active, tabs.tabs.length]);
 			return h("aside", { className: "mp4-panel" + (wide ? " mp4-panel-wide" : ""), "aria-label": "右侧面板" },
 				h("div", { className: "mp4-tabs" },
-					tabs.tabs.map(id => h("span", { key: id, className: "mp4-tab" + (tabs.active === id ? " mp4-tab-on" : "") },
+					h("div", { className: "mp4-tabs-list", ref: list }, tabs.tabs.map(id => h("span", { key: id, className: "mp4-tab" + (tabs.active === id ? " mp4-tab-on" : "") },
 						h("button", { type: "button", onClick: () => tabs.select(id) }, info[id]?.icon ? h(Icon, { name: info[id].icon, size: 14 }) : null, info[id]?.label || id),
-						h("button", { type: "button", className: "mp4-tab-x", "aria-label": `关闭${info[id]?.label || ""}`, onClick: () => tabs.close(id) }, "×"))),
+						h("button", { type: "button", className: "mp4-tab-x", "aria-label": `关闭${info[id]?.label || ""}`, onClick: () => tabs.close(id) }, "×")))),
 					h("button", { type: "button", className: "mp4-icon", "aria-label": "打开工具", onClick: () => tabs.select("start") }, h(Icon, { name: "plus", size: 15 })),
 					h("span", { className: "mp4-tabs-end" },
 						h("button", { type: "button", className: "mp4-icon", "aria-label": wide ? "恢复宽度" : "加宽面板", onClick: onWide }, h(Icon, { name: "widen", size: 15 })),
@@ -2358,18 +2360,32 @@ window.__ModuleLoader__.load({
 		function CardGroup({ label, children }) {
 			return h("div", { className: "mp4-setgroup" }, h("h4", null, label), h("div", { className: "mp4-setlist" }, children));
 		}
-		function TaskSummary({ project, thread }) {
+		function TaskSummary({ project, thread, inTask }) {
+			const [accepting, setAccepting] = useState(false), [acceptError, setAcceptError] = useState(null);
 			const exp = thread.experience || {}, summary = exp.summary || {};
 			const checks = thread.checklist || [], done = checks.filter(c => c.done).length, files = deliveredFiles(project, thread);
 			const related = thread.relatedThreadId ? project.threads.find(t => t.id === thread.relatedThreadId) : null;
 			const asked = (thread.cited || []).filter(m => m.author?.kind === "human" && m.text);
 			const delivered = thread.state === "review_ready" || thread.state === "done";
-			const showChanges = () => { try { shell.sidebar?.openTab(CHANGES_TAB_KIND, { revealIfOpened: true }); } catch (_e) { /* the panel is not ready */ } };
+			const ownSession = isOutside(thread) ? thread.dshSessionId : thread.sessionId;
+			const showChanges = () => {
+				if (!inTask) return openTask(project.id, thread);
+				try { shell.sidebar?.openTab(CHANGES_TAB_KIND, { revealIfOpened: true }); } catch (_e) { /* the panel is not ready */ }
+			};
+			const mr = thread.gitlab, mergeReady = !project.gitlab || ["ready", "merge_error"].includes(mr?.status);
+			const accept = async () => {
+				setAccepting(true); setAcceptError(null);
+				try { await act("updateThread", { projectId: project.id, threadId: thread.id, resolved: true, state: "done", expectedSha: mr?.sha }); } catch (e) { setAcceptError(e.message); } finally { setAccepting(false); }
+			};
+			const reviewAction = thread.state !== "review_ready" || thread.resolved ? null
+				: inTask || ownSession ? h("button", { type: "button", className: "mp4-btn mp4-btn-strong", onClick: showChanges }, "查看交付")
+				: h("button", { type: "button", className: "mp4-btn mp4-btn-strong", disabled: accepting || !mergeReady, onClick: accept }, project.gitlab ? (mr?.status === "merge_error" ? "重试合并" : "验收通过并合并") : "验收通过");
 			const checkRows = checks.map((c, i) => h("div", { key: i, className: "mp4-check" + (c.done ? " mp4-check-done" : "") }, h("span", { className: "mp4-check-mark" }, c.done ? h(Icon, { name: "check", size: 14 }) : h("i", { className: "mp4-check-todo" })), h("span", null, c.text)));
 			const brief = thread.brief || summary.goal;
 			// A board of what the owner needs, in the order they read it: where it stands, why it exists, what came out, how it went.
 			return h(React.Fragment, null,
-				h(TaskBanner, { project, thread, action: thread.state === "review_ready" && !thread.resolved ? h("button", { type: "button", className: "mp4-btn mp4-btn-strong", onClick: showChanges }, "查看交付") : null }),
+				h(TaskBanner, { project, thread, action: reviewAction }),
+				acceptError ? h("p", { className: "mp-error", role: "alert" }, acceptError) : null,
 				brief || asked.length || related ? h(CardGroup, { label: "背景" },
 					brief ? h("div", { className: "mp4-says" }, h(Clamp, { text: brief })) : null,
 					asked.slice(-2).map(m => h("figure", { key: m.id, className: "mp4-quote" },
@@ -2868,7 +2884,7 @@ window.__ModuleLoader__.load({
 			// A task with two open decisions gives the same line twice; each line is offered once.
 			return [...new Set([
 				...waiting.filter(x => x.decision).map(x => `「${x.title}」按推荐的回复`),
-				...waiting.filter(x => !x.decision && x.ask.startsWith("交付")).map(x => `帮我把「${x.title}」验收了`),
+				...waiting.filter(x => x.kind === "review").map(x => `帮我把「${x.title}」验收了`),
 				"今天做了什么",
 			])].filter(s => !said.has(s)).slice(0, 4);
 		}
@@ -3521,7 +3537,9 @@ window.__ModuleLoader__.load({
 			const starters = said.size ? [] : ["记住：", "新建一个项目，"];
 			if (!suggestions.length && !starters.length) return null;
 			return h("div", { className: "mp4-sugs mp4-dock-sugs" },
-				suggestions.map(s => h("button", { key: s, type: "button", className: "mp4-sug", onClick: () => send(s) }, s)),
+				suggestions.map(s => h("button", { key: s, type: "button", className: "mp4-sug", title: s === "今天做了什么" ? undefined : "填进输入框，由你发送",
+					// Looking is a click; answering a decision or accepting a task is a sentence the owner sends themselves.
+					onClick: e => { if (s === "今天做了什么") send(s); else if (!draftInto(e.currentTarget, s)) setError("没找到输入框"); } }, s)),
 				starters.map(s => h("button", { key: s, type: "button", className: "mp4-sug", title: "填进输入框", onClick: e => { if (!draftInto(e.currentTarget, s)) setError("没找到输入框"); } }, s.replace(/[：，]$/, "…"))),
 				error ? h("span", { className: "mp-error" }, error) : null);
 		}
@@ -3674,7 +3692,7 @@ window.__ModuleLoader__.load({
 			if (!thread) return h("div", { className: "mp4-tabpane" }, h("p", { className: "mp4-muted" }, "正在读取任务…"));
 			return h("div", { className: "mp4-tabpane" },
 				h("h3", { className: "mp4-tab-title" }, thread.title),
-				h(TaskSummary, { project, thread }),
+				h(TaskSummary, { project, thread, inTask: owner.t.sessionId === sessionId }),
 				owner.t.sessionId !== sessionId ? h("button", { type: "button", className: "mp4-link-btn", onClick: () => openTask(project.id, thread) }, "回到这个任务的对话 ›") : null,
 				h("button", { type: "button", className: "mp4-link-btn", onClick: () => openProject(project.id) }, `回到「${project.name}」的对话 ›`));
 		}
@@ -4852,7 +4870,7 @@ html[data-theme="dark"],html.dark{--rx-gray-1:#111111;--rx-gray-2:#191919;--rx-g
 /* right panel */
 .mp4-panel{flex:none;width:420px;max-width:46%;border-left:.5px solid var(--mp4-hair);display:flex;flex-direction:column;min-height:0;background:var(--mp4-bg)}
 .mp4-panel-wide{width:640px;max-width:60%}
-.mp4-tabs{flex:none;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;border-bottom:.5px solid var(--mp4-hair);overflow-x:auto}
+.mp4-tabs{flex:none;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;border-bottom:.5px solid var(--mp4-hair);overflow:hidden} .mp4-tabs-list{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none} .mp4-tabs-list::-webkit-scrollbar{display:none} .mp4-tabs > .mp4-icon{flex:none}
 .mp4-tab{display:inline-flex;align-items:center;border-radius:8px;flex:none}
 .mp4-tab button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:20px;padding:0 4px 0 10px;color:var(--mp4-fg3)}
 .mp4-tab .mp4-tab-x{padding:0 8px 0 4px;opacity:.5}.mp4-tab .mp4-tab-x:hover{opacity:1}
