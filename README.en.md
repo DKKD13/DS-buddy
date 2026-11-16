@@ -1,4 +1,4 @@
-![The DS-buddy timeline: what you did on the computer, each entry with the apps it used and the project it belongs to](docs/site/blog/img/hero-timeline.jpg)
+![DS-buddy: the personal assistant Tacit on the left, the Waiting on you board on the right](docs/site/blog/img/rd-hero.jpg)
 
 # DS-buddy: your next agent product may not need agents
 
@@ -16,27 +16,39 @@ We see it differently.
 
 **Most of the time, you don't need multiple agents.** Managing agents is, at heart, managing context. A fork shares: the new branch is born with the main conversation's full context. Multiple agents pass things on: compress, retell, understand again, and every extra layer loses a little more. Messages passed between people get garbled, and so do messages between agents. Meeting-room multi-agent looks like collaboration, but it only moves the human way of organising onto models.
 
+![A fork shares the context; multiple agents relay it layer by layer](docs/site/blog/img/rd-fork-en.jpg)
+
 A fork alone isn't enough either. Context that grows naturally in a conversation gets dirtier: small talk, stale conclusions and the noise of work in progress all stay in and keep using up the model's attention. Compression alone can't save it.
 
 **Context should be designed from the start.** AI needs a clear goal and acceptance criteria, so DS-buddy organises work around the goal, that is, the loop. You only need to make three things clear: what to do, where the context is, and what the standard is. The AI breaks that into tasks, and each task has its own context pack, which you can think of as a goal file. That file is what really needs maintaining over time: injected each time, updated each time. A task worth handing over doesn't have to be big, but it has to be complete and deliverable on its own.
 
+![A task's details page, which is its context pack](docs/site/blog/img/rd-pack.jpg)
+
 The agents that do the work are just tools. Their state is fragile; they are thrown away after use and injected again next time. Add automated tasks that run again on a schedule, and your task loops keep turning by themselves.
+
+![The context pack is kept over time; executors are disposable](docs/site/blog/img/rd-exec-en.jpg)
 
 **Hide the details, show the progress.** Multica and Raft organise agents through group chats and tickets, their underlying abstractions are well made, and we borrowed from their thinking. But setting up channels, configuring roles and dividing up the work is a burden for people in itself. How the context is assembled, at which layer the cache hits, how tokens are saved: that is all under the hood. Hiding it well also pays off: with the stable part at the front, the model can reuse what it read last time, and a cache hit and a cache miss differ in cost by an order of magnitude.
 
 So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible. Every task has a page of details, and whatever needs your call is on one board called Waiting on you.
 
-![The Waiting on you board: tasks and reminders waiting on you, and a task in progress](docs/site/blog/img/shot-board-banner.jpg)
+![The Waiting on you board: the waiting lane and the in-progress lane](docs/site/blog/img/rd-board.jpg)
 
 **It understands before you speak.** For AI to take over carrying context, it first has to see enough of it. What you are doing on screen and the messages in Feishu keep coming in and are organised into a timeline every 10 minutes. Files on your computer are read when needed. All of it is read-only and can be turned off at any time.
 
-![Asking Tacit about a line from an interview: it finds the source in what the screen recorded; on the right, the read-only source settings](docs/site/blog/img/recall-banner.jpg)
+![The computer timeline, and the read-only source settings](docs/site/blog/img/rd-timeline.jpg)
 
 Collecting context automatically isn't new: Screenpipe, AirJelly, Littlebird and the Computer History built into Codex have been doing it for a while. But most of them stop at collecting context and never get to action.
 
+![Asking Tacit about a line from an interview: it finds the source in what the screen recorded](docs/site/blog/img/rd-recall.jpg)
+
 The core assistant in DS-buddy is called Tacit by default, meaning tacit understanding. A good buddy doesn't need you to spell everything out.
 
+![Tacit's personality, name and shortcut](docs/site/blog/img/rd-tacit.jpg)
+
 **A small suggestion: use the strongest model to split the work.** The most important link right now is the coordinator, the assistant that splits the work, and whether it gets the division and the size of tasks right. We recommend a strong model such as Claude Opus 5.5 or GPT-6 Astra for the personal assistant. As models get stronger and the skills for dividing work get refined, this keeps getting better.
+
+![Which model each assistant uses, on one page](docs/site/blog/img/rd-models.jpg)
 
 People express preferences and give direction only where it matters, instead of carrying information around. The rest goes to the AI.
 
