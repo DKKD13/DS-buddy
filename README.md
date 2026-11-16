@@ -1,6 +1,6 @@
 # DS-buddy
 
-**你的下一个 Agent 产品，不一定需要有 Agent。**
+**探索人与 AI 的最佳协作方式**
 
 [English](README.en.md)
 

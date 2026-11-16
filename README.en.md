@@ -1,6 +1,6 @@
 # DS-buddy
 
-**Your next agent product may not need agents.**
+**Exploring the best way for people and AI to work together.**
 
 [中文](README.md)
 
