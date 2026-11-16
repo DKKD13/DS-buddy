@@ -5235,13 +5235,13 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-kb-card:hover{box-shadow:0 0 0 .5px var(--rx-gray-8),0 2px 8px rgba(0,0,0,.06)}
 .mp4-kb-card:focus-visible,.mp4-kb-x:focus-visible,.mp4-kb-tool:focus-visible,.mp4-kb-more:focus-visible{outline:2px solid var(--rx-blue-9);outline-offset:-2px}
 .mp4-kb-top{display:flex;align-items:flex-start;gap:8px;min-width:0}
-.mp4-kb-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:22px}.mp4-kb-icon>.mp4-app{border-radius:4px}
-.mp4-kb-title{flex:1;min-width:0;font-size:14px;line-height:22px;font-weight:500;color:var(--mp4-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mp4-kb-when{flex:none;font-size:12px;line-height:22px;color:var(--mp4-fg3);font-variant-numeric:tabular-nums}
+.mp4-kb-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:20px}.mp4-kb-icon>.mp4-app{border-radius:4px}
+.mp4-kb-title{flex:1;min-width:0;font-size:13px;line-height:20px;font-weight:500;color:var(--mp4-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp4-kb-when{flex:none;font-size:12px;line-height:20px;color:var(--mp4-fg3);font-variant-numeric:tabular-nums}
 .mp4-kb-body{padding-left:24px;font-size:13px;line-height:20px;color:var(--mp4-fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mp4-kb-foot{margin-top:auto;padding-left:24px;min-width:0;display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3);overflow:hidden;white-space:nowrap}
 .mp4-kb-where{display:inline-flex;align-items:center;gap:4px;min-width:0}
-.mp4-kb-lane:not(.mp4-kb-lane-done) .mp4-kb-card{min-height:84px}
+.mp4-kb-lane:not(.mp4-kb-lane-done) .mp4-kb-card{min-height:82px}
 .mp4-kb-quiet .mp4-kb-title{font-weight:400;color:var(--mp4-fg2)}
 .mp4-kb-x{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:9px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;color:var(--mp4-fg3);background:var(--mp4-bg);opacity:0;transition:opacity 250ms ease-out,background 250ms ease-out}
 .mp4-kb-card:hover .mp4-kb-x,.mp4-kb-x:focus-visible{opacity:1}.mp4-kb-x:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}@media (hover:none){.mp4-kb-x{opacity:1}}
