@@ -1,10 +1,58 @@
 # DS-buddy
 
-**只说目标，只管拍板。**
+**你的下一个 Agent 产品，不一定需要有 Agent。**
 
-DS-buddy 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的一个开源插件。你说一句目标，它把没说清的问清楚，拆成几个任务同时去做，做完把成品交到你面前。你面对的只有项目、任务和一块「待你决定」的看板，看不到 agent 这一层。里面那个一直在的个人助理，默认叫 Tacit，取「默会」的意思。
+[English](README.en.md)
 
-[为什么这么做](https://dkkd13.github.io/tacit-dsh/site/blog/) · [长文](https://dkkd13.github.io/tacit-dsh/site/blog/deep/) · [产品页](https://dkkd13.github.io/tacit-dsh/site/) · [演示片](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [English](README.en.md)
+agent 越来越能干，人却越来越忙。
+
+今天做应用产品，最前面、最核心的问题，就是去降低人和 AI 之间沟通的带宽。我们常常面临的困境是：我们疲于奔命，绝大多数时候都在扮演胶水的角色，却缺少真正的时间来思考，给出正确的方向。
+
+在讨论多 agent 之前，我们先来讨论一个问题。
+
+## Fork vs 多 agent：管理 agent 的本质是管理 context
+
+什么时候需要 fork，什么时候需要多 agent？答案是，绝大多数时候我们都不需要多 agent。
+
+fork 是共享：新分支天生拥有主对话的全部记忆。多 agent 是传递：压缩、复述、再理解，传递每多一层，损耗就多一分。就像人和人之间传话会产生误差一样，多 agent 也会产生误差，还增加了不必要的通讯成本。
+
+各家对场景的抽象，为什么都先走向了 agent？因为我们习惯了通过人来组织上下文，习惯了各司其职。但对 agent 来说，我们需要的只是上下文和模型（agent 是部分的上下文加部分的模型）。agent 和 agent 之间的差别，比人和人之间的差异小得多，更重要的是模型上的差异。agent 是不必要的一层抽象，管理 agent 的本质，是管理 context。
+
+但 fork 救不了另一件事：主对话会越来越膨胀。靠对话自然生长出来的上下文，质量往往越来越差：闲聊、过时的结论、中间过程的噪音都留在里面，持续消耗模型的注意力。所以最佳的上下文方案，一定是在一开始就有意识地设计，而不是随着对话精进。
+
+## 转向以 Goal（Loop）为核心的 context 组织：runtime 和 session 只是临时的工具
+
+每一个核心线程，工作习惯都转向了以 goal，也就是 loop 为核心。
+
+对于每一个任务来说，目前 session 的问题是：绝大多数有价值的 context，都淹没在动态的对话里。但实际上，一个任务固定的索引是很简单的，往往就是一些明确的目标、仓库的位置、验收的标准、文档的位置。
+
+所以人只需要讲清楚三件事：要做什么，上下文在什么地方，标准是什么。然后 AI 把它们拆解成一个一个任务（thread）的上下文包。上下文包可以粗略理解为一个 goal 文件，这是我们真正要长期维护的，每次注入，每次更新。
+
+至于执行，那些临时的 agent 其实都是 tool。它们的状态是脆弱的，就是一个 runtime，每次重新注入就好了，实际上不太需要维护。
+
+## 隐藏配置的细节：相信模型的能力，提供 monitoring 的能力，一切交给 AI
+
+现在市面上类似的多 agent 产品都过度暴露了。Multica、Raft 通过群聊、通过工单的传递，确实很好地提供了一种组织方式，底层的抽象也做得很好，我借鉴了它们的思路和构造方式。但对人来说，建频道、配角色、做分工，本身也是一件费力的事情。
+
+细节是需要包裹的。上下文怎么组装、缓存在哪一层命中、token 怎么省，这些都是引擎盖下的事，不该露到用户面前。包裹得好，还有实际的回报：稳定的部分放在前面，模型就能复用上次的阅读成果，而缓存命中和不命中，成本差着一个数量级。
+
+所以在 DS-buddy 里，没有要起名字的 agent，也没有要配的技能。但每件事做到哪了、交给了哪个模型，都看得见：每个任务有一页详情，需要你的事都在一块「待你决定」的看板上。
+
+## 全面的 context 收集：把人从信息的搬运里解放出来
+
+一个好的 AI 要能接过这一层，首先需要摄入你足够多的 context。这就引入了我们最重要的一个设计：上下文的收集。屏幕上在做的事、飞书里的消息，源源不断地进来，每 10 分钟整理成一条时间线；电脑里的文件，需要时去读。全部只读，随时能关。
+
+自动获取不是一件新鲜的事情，以 Screenpipe 为代表，还有 AirJelly、Littlebird，包括 Codex 内置的 Computer History，都早就存在了，但它们大多没有打通从 context 到行动的循环。
+
+我认为这是未来的工作模式：人只在真正的接入口表达喜好、价值，给出关键的指引，而不是像今天这样沦为信息的搬运工，伤害注意力。让人能够专注于真正重要的事情。
+
+DS-buddy 里核心的助理，名字默认叫 Tacit，内涵是默会，心领神会。因为我认为，真正好的 buddy 应该在你开口之前，就了解一切相关的上下文。
+
+DS-buddy，你的下一个 Agent 产品，不一定需要有 Agent。
+
+接下来读：[工程架构](https://dkkd13.github.io/tacit-dsh/site/blog/deep/)讲它是怎么搭起来的，[使用说明](https://dkkd13.github.io/tacit-dsh/site/blog/guide/)讲怎么和 Tacit 一起工作。
+
+[工程架构](https://dkkd13.github.io/tacit-dsh/site/blog/deep/) · [使用说明](https://dkkd13.github.io/tacit-dsh/site/blog/guide/) · [产品页](https://dkkd13.github.io/tacit-dsh/site/) · [演示片](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
 
 ![一条任务从交代到交付](docs/launch/demo.gif)
 
@@ -19,14 +67,7 @@ dsh plugin --profile web add "$(pwd)"    # 把插件装进 DeepSeek Harness
 dsh --profile web                        # 启动，在浏览器里打开它给的地址
 ```
 
-打开后左边多出「个人助理」和「项目」。新建一个项目，说第一句目标就行。模型用的是你在 DeepSeek Harness 里配好的那个。一步一步的说明见[上手指南](docs/GETTING-STARTED.md)。
-
-## 它怎么想
-
-- **没有要你管的 agent。** 干活需要的只是上下文和模型。你说清要做什么、上下文在哪、标准是什么，它拆成任务，每个任务带一份自己的上下文。
-- **上下文自己进来。** 屏幕上在做的事和飞书里的消息，整理成一条时间线，认得出属于哪个项目的就归过去。全部只读，随时能关。
-- **执行的那一层可以换。** 默认由 DeepSeek Harness 执行，也可以在任务里换成 Claude Code。记录留在任务上，换了也不丢。
-- **该你的时候才找你。** 要你拍板，等你验收，做不下去了。只有你点了验收，一件事才算完。
+打开后左边多出「个人助理」和「项目」。新建一个项目，说第一句目标就行。模型用的是你在 DeepSeek Harness 里配好的那个。一步一步的说明见[上手指南](docs/GETTING-STARTED.md)，或者看[使用说明](https://dkkd13.github.io/tacit-dsh/site/blog/guide/)。
 
 ## 文档
 
