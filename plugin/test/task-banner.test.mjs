@@ -88,3 +88,7 @@ test('a word passed between tasks is never put in the owner\'s mouth, and a raw 
     ['你补充：加一页 FAQ', true],
   ]))
 })
+
+test('a note on the board wears the same ring family as the task cards, in a neutral colour', () => {
+  assert.deepEqual([...client.STATUS_LOOK.note], ['提醒', '#8d8d8d'])
+})

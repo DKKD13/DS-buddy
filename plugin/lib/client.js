@@ -1944,7 +1944,7 @@ window.__ModuleLoader__.load({
 		 * 排队 dashed grey, 进行中 half blue, 待拍板 yellow with a pause, 待验收 three-quarters yellow, 失败 red with a bar,
 		 * 已完成 solid green with a check, 已归档 grey with a cross.
 		 */
-		const STATUS_LOOK = { queued: ["排队中", "#8d8d8d"], working: ["进行中", "#0090ff"], decision: ["待拍板", "#eab308"], review: ["待验收", "#eab308"], failed: ["失败", "#e5484d"], done: ["已完成", "#30a46c"], archived: ["已归档", "#8d8d8d"] };
+		const STATUS_LOOK = { queued: ["排队中", "#8d8d8d"], working: ["进行中", "#0090ff"], decision: ["待拍板", "#eab308"], review: ["待验收", "#eab308"], failed: ["失败", "#e5484d"], done: ["已完成", "#30a46c"], archived: ["已归档", "#8d8d8d"], note: ["提醒", "#8d8d8d"] };
 		function taskStatus(t) {
 			if (!t) return "queued";
 			if (t.state === "done") return "done";
@@ -1963,6 +1963,7 @@ window.__ModuleLoader__.load({
 				: status === "review" ? [ring(), h("path", { key: "fill", d: "M7 7V3.6A3.4 3.4 0 1 1 3.6 7Z", fill: color })]
 				: status === "decision" ? [ring(), h("rect", { key: "a", x: 5, y: 4.6, width: 1.4, height: 4.8, rx: 0.4, fill: color }), h("rect", { key: "b", x: 7.6, y: 4.6, width: 1.4, height: 4.8, rx: 0.4, fill: color })]
 				: status === "failed" ? [ring(), h("path", { key: "bar", d: "M3.1 10.9L10.9 3.1", stroke: color, strokeWidth: 1.5 })]
+				: status === "note" ? [ring(), h("circle", { key: "dot", cx: 7, cy: 7, r: 1.8, fill: color })]
 				: status === "done" ? [h("circle", { key: "disc", cx: 7, cy: 7, r: 6.3, fill: color }), h("path", { key: "tick", d: "M4.4 7.2l1.8 1.8 3.5-3.7", fill: "none", stroke: "#FFFFFF", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" })]
 				: [ring(), h("path", { key: "x", d: "M5.1 5.1l3.8 3.8M8.9 5.1l-3.8 3.8", stroke: color, strokeWidth: 1.4, strokeLinecap: "round" })];
 			return h("svg", { className: "mp4-status", width: size, height: size, viewBox: "0 0 14 14", role: "img", "aria-label": label }, h("title", null, label), inner);
@@ -3152,8 +3153,8 @@ window.__ModuleLoader__.load({
 				key, className: "mp4-kb-card" + (quiet ? " mp4-kb-quiet" : ""), role: "button", tabIndex: 0, title: tip,
 				onClick: e => open(e.currentTarget), onKeyDown: e => { if (e.key === "Enter" && e.target === e.currentTarget) open(e.currentTarget); },
 			},
-				h("span", { className: "mp4-kb-top" }, h("span", { className: "mp4-kb-icon", title: iconTip }, icon), h("span", { className: "mp4-kb-title" }, title), when ? h("span", { className: "mp4-kb-when" }, when) : null),
-				body ? h("span", { className: "mp4-kb-body" }, body) : null,
+				h("span", { className: "mp4-kb-top" }, h("span", { className: "mp4-kb-icon", title: iconTip }, icon), h("span", { className: "mp4-kb-title", title: typeof title === "string" ? title : undefined }, title), when ? h("span", { className: "mp4-kb-when" }, when) : null),
+				body ? h("span", { className: "mp4-kb-body", title: typeof body === "string" ? body : undefined }, body) : null,
 				foot ? h("span", { className: "mp4-kb-foot" }, foot) : null,
 				dismiss ? h("button", { type: "button", className: "mp4-kb-x", title: dismiss[0], "aria-label": dismiss[0], onClick: e => { e.stopPropagation(); dismiss[1](); } }, h(Icon, { name: "close", size: 12 })) : null) });
 			const task = (p, t, status, extra) => card({ key: t.key || t.id, at: t.since || t.updatedAt, icon: h(StatusIcon, { status }), iconTip: STATUS_LOOK[status]?.[0], title: t.title,
@@ -3165,8 +3166,9 @@ window.__ModuleLoader__.load({
 					: n.from === "card" ? ["不用了", () => run(() => act("cardAction", { projectId: "hub", cardId: n.card.id, actionId: "dismiss" }))]
 					: ["不感兴趣", () => react(n.pick, "not_interested")];
 				const after = n.from === "pick" ? () => react(n.pick, n.lane === "do" ? "started" : n.lane === "read" ? "opened" : "noted") : null;
-				return card({ key: n.key, at: n.at, icon: h(AppIcon, { name: n.app, size: 16 }), iconTip: n.app, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
-					foot: n.from === "followup" ? `${n.who}　${n.where}` : null, when: n.at ? ago(n.at) : "", dismiss, tip: `把回复填进输入框：${reply}`,
+				// The same ring family as the task cards; where it came from (个人助理, 飞书) is in the tooltip and the foot.
+				return card({ key: n.key, at: n.at, icon: h(StatusIcon, { status: "note" }), iconTip: `${STATUS_LOOK.note[0]}：${n.app}`, title: n.title, body: n.from === "followup" ? `「${n.text}」` : n.text,
+					foot: n.from === "followup" ? `${n.who}　${n.where}` : n.app, when: n.at ? ago(n.at) : "", dismiss, tip: `把回复填进输入框：${reply}`,
 					open: from => { draft(from, reply); if (after) after(); } });
 			};
 			const byTime = list => list.sort((a, b) => (b.at || 0) - (a.at || 0)).map(x => x.el);
@@ -3180,7 +3182,7 @@ window.__ModuleLoader__.load({
 			return h(React.Fragment, null,
 				h("div", { className: "mp4-kb" }, lanes.map(([id, label, cards]) => {
 					const shown = whole[id] ? cards : cards.slice(0, 8);
-					return h("section", { key: id, className: "mp4-kb-lane" },
+					return h("section", { key: id, className: "mp4-kb-lane mp4-kb-lane-" + id },
 						h("h3", { className: "mp4-kb-head" }, label, h("span", { className: "mp4-kb-n" }, cards.length), id === "wait" ? diary : null),
 						h("div", { className: "mp4-kb-cards" }, shown,
 							cards.length > shown.length || whole[id] && cards.length > 8 ? h("button", { type: "button", className: "mp4-kb-more", onClick: () => setWhole(s => ({ ...s, [id]: !s[id] })) }, whole[id] ? "收起" : `还有 ${cards.length - shown.length} 件`) : null));
@@ -3674,6 +3676,11 @@ window.__ModuleLoader__.load({
 		 * Beside the Session title, the way back up: a task names its project (a click opens the project conversation,
 		 * whose task list marks the task just left) and who works on it; a task's sub-agent names the project too.
 		 */
+		/** Lucide corner-left-up (ISC licence): "one level up", drawn like the host's own header icons. */
+		function UpIcon() {
+			return h("svg", { className: "mp4-crumb-icon", width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.75, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+				h("path", { d: "M14 9 9 4 4 9" }), h("path", { d: "M20 20h-7a4 4 0 0 1-4-4V4" }));
+		}
 		function SessionProject({ sessionId }) {
 			const root = useRootSession(sessionId), onScreen = useOnScreenSession();
 			const { owner, thread, project } = useTaskOf(root);
@@ -3681,8 +3688,8 @@ window.__ModuleLoader__.load({
 			useEffect(() => { if (sub && onScreen === sessionId) keepTaskPanel(sessionId); }, [sub, onScreen, sessionId]);
 			if (!owner) return null;
 			return h("span", { className: "mp4-crumb" },
-				h("button", { type: "button", className: "mp4-crumb-up", title: sub ? `回到项目「${owner.p.name}」` : `回到项目「${owner.p.name}」（${UP_KEYS}）`, onClick: () => openProject(owner.p.id) },
-					h("span", { "aria-hidden": true }, "↑"), h(ProjectMark, { p: owner.p, size: 14, plain: true }), h("span", { className: "mp4-crumb-name" }, owner.p.name)),
+				h("button", { type: "button", className: "mp4-crumb-up", title: `回到项目「${owner.p.name}」`, "aria-keyshortcuts": sub ? undefined : (UP_KEYS === "⌘↑" ? "Meta+ArrowUp" : "Control+ArrowUp"), onClick: () => openProject(owner.p.id) },
+					h(UpIcon), h("span", { className: "mp4-crumb-name" }, owner.p.name), sub ? null : h("kbd", { className: "mp4-crumb-key" }, UP_KEYS)),
 				!sub && thread && executorOf(project, thread).name ? h("span", { className: "mp4-crumb-who", title: "执行这个任务的模型" }, executorOf(project, thread).name) : null);
 		}
 
@@ -4857,11 +4864,13 @@ html[data-theme="dark"],html.dark{--rx-gray-1:#111111;--rx-gray-2:#191919;--rx-g
 .mp4-agent-select{width:100%;height:28px;box-sizing:border-box;font:inherit;font-size:13px;padding:0 24px 0 8px;border:.5px solid var(--mp4-hair2);border-radius:6px;color:var(--mp4-fg);-webkit-appearance:none;appearance:none;background:var(--mp4-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238d8d8d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;cursor:pointer}.mp4-agent-select:hover{border-color:var(--rx-gray-8)}
 /* beside the Session title: up to the project, and who works on the task */
 .mp4-crumb{display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:12px;line-height:18px}
-.mp4-crumb-up{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:200px;padding:2px 8px;border-radius:6px;color:var(--mp4-fg2)}
-.mp4-crumb-up:hover{background:var(--mp4-hover);color:var(--mp4-fg)}
+.mp4-crumb .mp4-crumb-up{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:220px;height:20px;padding:0 6px;border-radius:6px;font-size:12px;line-height:20px;color:var(--mp4-fg2);background:var(--rx-gray-3);transition:background 250ms ease-out,color 250ms ease-out}
+.mp4-crumb .mp4-crumb-up:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}
 .mp4-crumb-up:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,var(--rx-blue-9));outline-offset:1px}
 .mp4-crumb-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mp4-crumb-who{flex:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;border-radius:999px;color:var(--mp4-fg3);background:var(--mp4-fill)}
+.mp4-crumb-icon{flex:none}
+.mp4-crumb-key{flex:none;font:inherit;font-size:12px;line-height:20px;color:var(--mp4-fg3);margin-left:2px}
+.mp4-crumb-who{flex:none;box-sizing:border-box;max-width:120px;height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px;border-radius:6px;line-height:20px;color:var(--mp4-fg2);background:var(--rx-gray-3)}
 /* state: one semantic colour channel */
 .mp4-pill{display:inline-flex;align-items:center;font-size:12px;line-height:18px;font-weight:500;padding:0 8px;border-radius:999px;white-space:nowrap}
 .mp4-wait{color:var(--rx-yellow-11);background:var(--rx-amber-3)}.mp4-run{color:var(--rx-blue-11);background:var(--rx-blue-3)}.mp4-done{color:var(--rx-green-11);background:var(--rx-green-3)}.mp4-fail{color:var(--rx-red-11);background:var(--rx-red-3)}.mp4-idle{color:var(--rx-gray-11);background:var(--rx-gray-3)}
@@ -5227,11 +5236,12 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-kb-card:focus-visible,.mp4-kb-x:focus-visible,.mp4-kb-tool:focus-visible,.mp4-kb-more:focus-visible{outline:2px solid var(--rx-blue-9);outline-offset:-2px}
 .mp4-kb-top{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .mp4-kb-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:22px}.mp4-kb-icon>.mp4-app{border-radius:4px}
-.mp4-kb-title{flex:1;min-width:0;font-size:14px;line-height:22px;font-weight:500;color:var(--mp4-fg);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mp4-kb-title{flex:1;min-width:0;font-size:14px;line-height:22px;font-weight:500;color:var(--mp4-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mp4-kb-when{flex:none;font-size:12px;line-height:22px;color:var(--mp4-fg3);font-variant-numeric:tabular-nums}
-.mp4-kb-body{padding-left:24px;font-size:13px;line-height:20px;color:var(--mp4-fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.mp4-kb-foot{padding-left:24px;min-width:0;display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3);overflow:hidden;white-space:nowrap}
+.mp4-kb-body{padding-left:24px;font-size:13px;line-height:20px;color:var(--mp4-fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp4-kb-foot{margin-top:auto;padding-left:24px;min-width:0;display:flex;align-items:center;gap:6px;font-size:12px;line-height:18px;color:var(--mp4-fg3);overflow:hidden;white-space:nowrap}
 .mp4-kb-where{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.mp4-kb-lane:not(.mp4-kb-lane-done) .mp4-kb-card{min-height:84px}
 .mp4-kb-quiet .mp4-kb-title{font-weight:400;color:var(--mp4-fg2)}
 .mp4-kb-x{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:9px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;color:var(--mp4-fg3);background:var(--mp4-bg);opacity:0;transition:opacity 250ms ease-out,background 250ms ease-out}
 .mp4-kb-card:hover .mp4-kb-x,.mp4-kb-x:focus-visible{opacity:1}.mp4-kb-x:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}@media (hover:none){.mp4-kb-x{opacity:1}}
