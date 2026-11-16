@@ -1,4 +1,4 @@
-![DS-buddy: exploring the best way for people and AI to work together](docs/site/blog/img/rd3-hero-en.jpg)
+![DS-buddy: exploring the best way for people and AI to work together](docs/site/blog/img/rd4-hero-en.jpg)
 
 <p align="center"><a href="README.md">中文</a></p>
 
@@ -10,31 +10,33 @@ The problem isn't that AI isn't smart enough. It's that the bandwidth between pe
 
 The idea of an agent shouldn't be overused; most of the time a fork already does what we need. Many agent products carry the experience of organising people over to AI: open more and more agents, assign roles, set up channels, pass tickets along. It looks like collaboration, but at heart it still simulates a human meeting room, hoping that imitating people will lower the cost of communicating.
 
-**The key to using AI well is a structure that can be delivered, verified and put together.**
+**The key to using AI well is to split the work into tasks that can be verified and have a clear goal: one goal and one loop at a time.**
 
-DS-buddy deliberately has an agent maintain the organisation of each task, and offers automations (tasks that run again on a schedule) so you can build your own task loops smoothly. Every core thread gets a stable context.
+DS-buddy deliberately has an agent maintain the organisation of each task: what the goal is, what counts as done, and where the context is are all written into the task. Add automations that run again on a schedule, and you can build your own task loops smoothly. Every core thread has a stable context.
 
-![A project: one sentence in, the project assistant opens two tasks and asks first about what is unclear; on the right, the project's tasks](docs/site/blog/img/rd3-project.jpg)
+![A project: one sentence in, the project assistant opens two tasks and asks first about what is unclear; on the left, every project and the recent tasks](docs/site/blog/img/rd4-project.jpg)
 
-**We don't need the concept of an agent. Its runtime details and its dynamic, fragmented state should be hidden.**
+**We don't need the concept of an agent. The runtime details and the dynamic, fragmented state should stay hidden.**
 
-DS-buddy is built on the idea that an agent only needs to expose the model itself; every extra layer of agent is one more burden. (Some will say that agents in products like Multica need Skills and runtimes configured, but that makes setup harder for users.) These belong to the task's context in the broad sense: they shouldn't be preset, but should change with what the tasks in a project need. Of course, you can, and are encouraged to, give each project a rule for which models to prefer.
+DS-buddy is built on the idea that an agent only needs to expose the model itself; every extra layer of agent is one more burden. Some will say that agents in products like Multica need Skills and runtimes configured, but that makes setup harder. These belong to the task's context in the broad sense: they shouldn't be preset, but should change with what the tasks in a project need. Of course, you can, and are encouraged to, give each project a rule for which models to prefer.
 
-![Model rules: a one-line model strategy per project, or let the assistant decide; which model each assistant uses, on one page](docs/site/blog/img/rd3-models.jpg)
+<p align="center"><img src="docs/site/blog/img/rd4-models.jpg" alt="Assistants and models: a one-line model strategy per project, or let the assistant decide" width="648"></p>
 
-**The agent abstraction isn't needed, and shouldn't be a burden.**
+**You can do without the agent abstraction, but every runtime should stay visible.**
 
-But DS-buddy holds that every runtime should still be observable.
+The abstraction shouldn't be a burden. Still, DS-buddy keeps every runtime observable: what woke it, the steps it took, and the result are all in the developer view.
 
-![The developer view: every time the assistant was woken, what woke it, the steps it took, and the result](docs/site/blog/img/rd3-devview.jpg)
+![The developer view: every time the assistant was woken, what woke it, the steps it took, and the result](docs/site/blog/img/rd4-devview.jpg)
 
-**Take in as much context as possible, use the best model to assign the work, and let the AI explore.**
+**Take in as much context as possible, use the best model to assign the work, then let the AI explore.**
 
-DS-buddy trusts, as far as it can, that giving the model enough context and letting it explore freely beats over-engineered prompts.
+DS-buddy trusts, as far as it can, that giving the model enough context and letting it explore freely beats over-engineered prompts. What you do on screen is organised into a timeline, and everything that needs your call is on one board.
 
-![On the left, the computer timeline (Computer History); on the right, the Waiting on you board](docs/site/blog/img/rd3-context.jpg)
+<p align="center"><img src="docs/site/blog/img/rd4-context.jpg" alt="The computer timeline, and below it the Waiting on you board" width="744"></p>
 
-A friendly tip: use the highest-quality model you can for the personal assistant.
+**A small suggestion: give the personal assistant the best model you can.**
+
+The assistant that splits the work is the coordinator. Whether the tasks are divided sensibly, and at the right size, decides how smoothly everything after it runs. So we suggest the highest-quality model you can use for the personal assistant, such as Claude Opus 5.5 or GPT-6 Astra.
 
 ## Install
 
