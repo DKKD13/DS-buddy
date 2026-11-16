@@ -209,15 +209,17 @@ test('recap, memory and cards need cross-project refs; the board and the dock sh
 
   assert.throws(() => a.proposeCard({ kind: 'next_step', title: '去拍板', refs: [dRef], project_id: projectId, thread_id: 't_nope' }), /没有这个线程/)
   assert.throws(() => a.proposeCard({ kind: 'next_step', title: '去拍板', refs: [dRef], actions: [{ id: 'handoff' }], project_id: projectId }), /handoff 需要 text/)
+  // The board lists a task waiting on a decision by itself: a board card for it is refused, an interrupt still goes.
+  assert.throws(() => a.proposeCard({ kind: 'next_step', title: '先拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef] }), /已经在「待你决定」里了/)
   const { cardId } = a.proposeCard({
-    kind: 'next_step', title: '先拍板回顾接口', body: '工程师在等你选自然日还是 24 小时。', project_id: projectId, thread_id: threadId, refs: [dRef],
+    kind: 'next_step', title: '先拍板回顾接口', body: '工程师在等你选自然日还是 24 小时。', project_id: projectId, thread_id: threadId, refs: [dRef], level: 'interrupt',
     actions: [{ id: 'handoff', text: '按自然日做，跨时区先不管' }],
   })
   const card = env.hub().cards.get(cardId)
   assert.deepEqual(card.actions.map(x => x.id), ['open_thread', 'handoff'])
   assert.equal(card.target.threadTitle, '今日回顾接口')
   // Same thread, same kind: the new card replaces the old one.
-  const twin = a.proposeCard({ kind: 'next_step', title: '拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef] })
+  const twin = a.proposeCard({ kind: 'next_step', title: '拍板回顾接口', project_id: projectId, thread_id: threadId, refs: [dRef], level: 'interrupt' })
   assert.equal(twin.superseded, cardId)
   for (let i = 0; i < 3; i++) a.proposeCard({ kind: 'link', title: `关联 ${i}`, refs: [dRef] })
   assert.throws(() => a.proposeCard({ kind: 'link', title: '第六张', refs: [dRef] }), /今天已经递了 5 张/)
