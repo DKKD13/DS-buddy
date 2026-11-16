@@ -6,7 +6,7 @@ Tacit 是跑在 DeepSeek Harness（DSH）里的一套上下文方案：把散在
 
 Tacit is a context layer for DeepSeek Harness. It reorganizes what is scattered across your chats, projects, Feishu and computer, so every agent gets exactly the context it needs. Say one sentence, and it gets it.
 
-[English](README.en.md)
+[English](README.en.md) · [产品页](https://dkkd13.github.io/tacit-dsh/site/)
 
 ![待你决定看板](docs/site/assets/board.webp)
 
@@ -14,7 +14,7 @@ Tacit is a context layer for DeepSeek Harness. It reorganizes what is scattered 
 
 ![一条任务从交代到交付](docs/launch/demo.gif)
 
-演示片（63 秒，真实界面，演示数据）：[`https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4`](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
+演示片（65 秒，真实界面，演示数据）：[`https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4`](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
 
 ## 它是什么
 

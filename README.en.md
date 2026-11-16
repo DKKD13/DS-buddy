@@ -8,7 +8,7 @@ Tacit is a context layer inside DeepSeek Harness (DSH). It sorts what is scatter
 
 ![The decisions board](docs/site/assets/board.webp)
 
-Product page: [`docs/site/index.html`](docs/site/index.html) · 63-second film: [`https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4`](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
+Product page: [dkkd13.github.io/tacit-dsh/site](https://dkkd13.github.io/tacit-dsh/site/) · 65-second film: [`https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4`](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
 
 ## What it is
 
