@@ -1,60 +1,40 @@
-![DS-buddy: the personal assistant Tacit on the left, the Waiting on you board on the right](docs/site/blog/img/rd2-hero.jpg)
+![DS-buddy: exploring the best way for people and AI to work together](docs/site/blog/img/rd3-hero-en.jpg)
 
-# DS-buddy: your next agent product may not need agents
+<p align="center"><a href="README.md">中文</a></p>
 
-**Exploring the best way for people and AI to work together.**
+Over the past six months, one pain point has grown sharper for me: agents keep getting more capable, but people's efficiency hasn't kept pace. The same scene repeats: we run back and forth between several conversations, carrying context around, acting as the glue, and give up the time we need to think the direction through.
 
-[Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/) · [Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/) · [Product page](https://dkkd13.github.io/tacit-dsh/site/) · [Film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4) · [中文](README.md)
+The problem isn't that AI isn't smart enough. It's that the bandwidth between people and AI is too narrow. DS-buddy wants to shape a new way of interacting that lowers the friction between people and AI.
 
-Agents keep getting more capable, and our own efficiency hasn't kept up. We run back and forth between several conversations, carrying context around, acting as the glue, with little time left to think the direction through.
+**Most of the time, you don't need multiple agents. Managing agents is, at heart, managing context.**
 
-The problem isn't that AI isn't smart enough. It's that the bandwidth between people and AI is too narrow. Context has to reach the AI, without using up people's attention to get it there.
+The idea of an agent shouldn't be overused; most of the time a fork already does what we need. Many agent products carry the experience of organising people over to AI: open more and more agents, assign roles, set up channels, pass tickets along. It looks like collaboration, but at heart it still simulates a human meeting room, hoping that imitating people will lower the cost of communicating.
 
-Many agent products answer with more agents: assign roles, hold meetings, pass messages to each other.
+**The key to using AI well is a structure that can be delivered, verified and put together.**
 
-We see it differently.
+DS-buddy deliberately has an agent maintain the organisation of each task, and offers automations (tasks that run again on a schedule) so you can build your own task loops smoothly. Every core thread gets a stable context.
 
-**Most of the time, you don't need multiple agents.** Managing agents is, at heart, managing context. A fork shares: the new branch is born with the main conversation's full context. Multiple agents pass things on: compress, retell, understand again, and every extra layer loses a little more. Messages passed between people get garbled, and so do messages between agents. Meeting-room multi-agent looks like collaboration, but it only moves the human way of organising onto models.
+![A project: one sentence in, the project assistant opens two tasks and asks first about what is unclear; on the right, the project's tasks](docs/site/blog/img/rd3-project.jpg)
 
-![A fork shares the context, noise included; multiple agents relay it and lose more at each layer](docs/site/blog/img/rd2-fork-en.jpg)
+**We don't need the concept of an agent. Its runtime details and its dynamic, fragmented state should be hidden.**
 
-A fork alone isn't enough either. Context that grows naturally in a conversation gets dirtier: small talk, stale conclusions and the noise of work in progress all stay in and keep using up the model's attention. Compression alone can't save it.
+DS-buddy is built on the idea that an agent only needs to expose the model itself; every extra layer of agent is one more burden. (Some will say that agents in products like Multica need Skills and runtimes configured, but that makes setup harder for users.) These belong to the task's context in the broad sense: they shouldn't be preset, but should change with what the tasks in a project need. Of course, you can, and are encouraged to, give each project a rule for which models to prefer.
 
-**Context should be designed from the start.** AI needs a clear goal and acceptance criteria, so DS-buddy organises work around the goal, that is, the loop. You only need to make three things clear: what to do, where the context is, and what the standard is. The AI breaks that into tasks, and each task has its own context pack, which you can think of as a goal file. That file is what really needs maintaining over time: injected each time, updated each time. A task worth handing over doesn't have to be big, but it has to be complete and deliverable on its own.
+![Model rules: a one-line model strategy per project, or let the assistant decide; which model each assistant uses, on one page](docs/site/blog/img/rd3-models.jpg)
 
-![A task's details page, which is its context pack](docs/site/blog/img/rd2-pack.jpg)
+**The agent abstraction isn't needed, and shouldn't be a burden.**
 
-The agents that do the work are just tools. Their state is fragile; they are thrown away after use and injected again next time. Add automated tasks that run again on a schedule, and your task loops keep turning by themselves.
+But DS-buddy holds that every runtime should still be observable.
 
-![The context pack is kept over time; executors are disposable](docs/site/blog/img/rd2-exec-en.jpg)
+![The developer view: every time the assistant was woken, what woke it, the steps it took, and the result](docs/site/blog/img/rd3-devview.jpg)
 
-**Hide the details, show the progress.** Multica and Raft organise agents through group chats and tickets, their underlying abstractions are well made, and we borrowed from their thinking. But setting up channels, configuring roles and dividing up the work is a burden for people in itself. How the context is assembled, at which layer the cache hits, how tokens are saved: that is all under the hood. Hiding it well also pays off: with the stable part at the front, the model can reuse what it read last time, and a cache hit and a cache miss differ in cost by an order of magnitude.
+**Take in as much context as possible, use the best model to assign the work, and let the AI explore.**
 
-So in DS-buddy there are no agents to name and no skills to configure. But how far each job has got, and which model it went to, is always visible. Every task has a page of details, and whatever needs your call is on one board called Waiting on you.
+DS-buddy trusts, as far as it can, that giving the model enough context and letting it explore freely beats over-engineered prompts.
 
-![The waiting lane of the board, and one task's progress and executor](docs/site/blog/img/rd2-board.jpg)
+![On the left, the computer timeline (Computer History); on the right, the Waiting on you board](docs/site/blog/img/rd3-context.jpg)
 
-**It understands before you speak.** For AI to take over carrying context, it first has to see enough of it. What you are doing on screen and the messages in Feishu keep coming in and are organised into a timeline every 10 minutes. Files on your computer are read when needed. All of it is read-only and can be turned off at any time.
-
-![The computer timeline, and the read-only source settings](docs/site/blog/img/rd2-timeline.jpg)
-
-Collecting context automatically isn't new: Screenpipe, AirJelly, Littlebird and the Computer History built into Codex have been doing it for a while. But most of them stop at collecting context and never get to action.
-
-![Asking Tacit about a line from an interview: it finds the source in what the screen recorded](docs/site/blog/img/rd2-recall.jpg)
-
-The core assistant in DS-buddy is called Tacit by default, meaning tacit understanding. A good buddy doesn't need you to spell everything out.
-
-![Tacit's personality, name and shortcut](docs/site/blog/img/rd2-tacit.jpg)
-
-**A small suggestion: use the strongest model to split the work.** The most important link right now is the coordinator, the assistant that splits the work, and whether it gets the division and the size of tasks right. We recommend a strong model such as Claude Opus 5.5 or GPT-6 Astra for the personal assistant. As models get stronger and the skills for dividing work get refined, this keeps getting better.
-
-![Which model each assistant uses, on one page](docs/site/blog/img/rd2-models.jpg)
-
-People express preferences and give direction only where it matters, instead of carrying information around. The rest goes to the AI.
-
-DS-buddy: your next agent product may not need agents.
-
-Give it a try.
+A friendly tip: use the highest-quality model you can for the personal assistant.
 
 ## Install
 
@@ -69,10 +49,12 @@ dsh --profile web                        # start it and open the address it prin
 
 The sidebar gains a personal assistant and projects. Create a project and state your first goal. Step by step: [the guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/).
 
-## Docs
+## More
 
+- [Introduction, full version](https://dkkd13.github.io/tacit-dsh/site/blog/en/): the long version of this introduction
 - [Guide](https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/): how to work with Tacit
 - [Architecture](https://dkkd13.github.io/tacit-dsh/site/blog/en/deep/): how it is built
+- [Product page](https://dkkd13.github.io/tacit-dsh/site/), [film](https://github.com/DKKD13/tacit-dsh/releases/latest/download/tacit-film.mp4)
 - [Getting started](docs/GETTING-STARTED.md), [features](docs/FEATURES.md) and [test report](docs/TESTING.md) (Chinese)
 
 ## Where it stands
