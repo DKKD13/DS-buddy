@@ -4,11 +4,19 @@
 
 Hi everyone. This is the long version of [the short post](../). Same line of thought, with comparisons and screenshots added.
 
-## The first question: the bandwidth of talking to it
+## The first question: people have become the glue
 
-When you build an AI product, I think one question comes before all the others: how to lower the bandwidth a person has to spend talking to the AI. The less the person has to say the better, and the AI still has to get the job right.
+Agents keep getting more capable, and the people using them keep getting busier. Busy carrying things, mostly: copying a chat thread, pasting a file, moving a conclusion from one conversation into another, telling a newly started agent where things stood yesterday. Multi-agent products add more: naming agents, setting up their skills, and watching a room full of conversations to see who is stuck. By the end of the day a person has mostly been glue. The work that is actually theirs, thinking the direction through and making the call, is what there is no time left for.
 
-Where does that bandwidth go today? Mostly into feeding background: copying a chat thread, pasting a file, explaining where you left off yesterday. Multi-agent products add more: naming agents, setting up their skills, and watching a room full of conversations to see who is stuck.
+People have measured this:
+
+- A 2022 [study](https://hbr.org/2022/08/how-much-time-and-energy-do-we-waste-toggling-between-applications) in Harvard Business Review followed 20 teams. As reported at the time, a person switched between apps and websites about 1,200 times a day and spent just under 4 hours a week getting reoriented afterwards, roughly 9% of a year's working time.
+- Gloria Mark of UC Irvine observed interrupted work. The figure she gave in [an interview](https://news.gallup.com/businessjournal/23146/too-many-interruptions-work.aspx): interrupted work was resumed after 23 minutes and 15 seconds on average.
+- In March 2026 BCG published a [survey](https://hbr.org/2026/03/when-using-ai-leads-to-brain-fry) of 1,488 US workers in Harvard Business Review and called the fatigue of using and watching AI beyond one's capacity "AI brain fry". As [The Decoder reported](https://the-decoder.com/study-warns-of-ai-brain-fry-as-workers-hit-cognitive-limits-overseeing-ai-agents/), people who have to keep watching AI at work spent 14% more mental effort and had 19% more information overload, and self-reported productivity peaked at three AI tools at once and dropped again with more. All of it is self-reported.
+
+The first two figures are from before AI. The third is about now: the tools have become agents, and the carrying and the watching haven't gone away.
+
+So when you build an AI product, I think one question comes before all the others: how to lower the bandwidth a person has to spend talking to the AI. The less the person has to say the better, and the AI still has to get the job right.
 
 I want people to do five things only: state the goal, point at things, mark right and wrong, watch comfortably, and stop repeating themselves. Every design below removes some talking that falls outside those five.
 
@@ -26,9 +34,13 @@ Because we are used to organising context through people, each with a job of the
 | OpenClaw, OpenHuman, ChatGPT Pulse | One assistant that is always there | One conversation that keeps growing |
 | dsh-superagent | Tickets and one panel, with sessions hidden completely | Only the panel |
 
-But what an AI needs in order to work is only two things: context and a model. Taken apart, an agent is some of the context plus some of the model. My own code is the same: an "assistant" is three things, a name, a persona and a default model, and sessions are opened per task.
+But what an AI needs in order to work is only two things: context and a model. Taken apart, an agent is some context plus a model. My own code is the same: an "assistant" is three things, a name, a persona and a default model, and sessions are opened per task.
 
-Wrapping that in a named character adds a layer nobody needs. Here is how each of five ways of organising agents does it.
+People differ a lot from one another, which is why we divide work between them. Agents hardly differ at all: give the same model a different persona and the "designer" becomes the "engineer". What really differs is the model behind them.
+
+One step further: what is the difference between opening three conversations in one project and getting three agents to work on the same thing? I thought about it for a long time and I don't think there is one. Either way it is three contexts, each with a model behind it. A conversation (a session) is just how the agent's side holds context: one line that only grows. People don't think in conversations, and a task shouldn't be boxed into one either.
+
+So my view is this: **managing agents is managing context.** Wrapping context in a named character adds a layer nobody needs. Here is how each of five ways of organising agents does it.
 
 ### Role teams
 
@@ -82,7 +94,10 @@ My view: this is the group closest to how I think. A session should be an implem
 
 ### The misunderstandings and failures this layer brings
 
+Having agents pass messages to each other is mostly unnecessary. Messages get distorted between people, and they do between agents too, at the price of an extra round.
+
 - **Paraphrase loses things.** In [Don't Build Multi-Agents](https://cognition.com/blog/dont-build-multi-agents) (June 2025) Cognition gives an example: build Flappy Bird by giving the background to one subagent and the bird to another. Neither sees the other's work, so the background looks like Mario and the bird doesn't look like Flappy Bird.
+- **Paraphrase also adds things.** I have been burned by this myself: in an early version I gave the assistant a goal in one sentence, and when it handed the job to the working agent it added a few requirements I had never stated. Downstream they were taken as my own words and followed. Now a handoff may only quote my own words, and code checks that the sentence really came from me.
 - **What one agent says gets taken for what you said.** The more assistants there are, the easier it is for authorisation to be passed along falsely. So several products label where a message came from: Agent Teams marks messages as coming from another Claude session, and Multica separates "on whose behalf" from "with whose permission".
 - **Two agents grab the same job.** Nobody relies on the prompt alone to prevent that: Agent Teams use file locks and Multica serialises claims in the database per (issue, agent).
 - **Cost.** The 15 times token figure above is the price of opening more windows.
@@ -126,9 +141,17 @@ My view: the default is to pass one description and collect one last message. Co
 
 ## But a fork doesn't fix a main conversation that keeps growing
 
-A fork carries all the background across, at the price of a window that starts large and costs more. The main conversation keeps growing too, until it has to be compacted, and compaction is lossy: details go missing. A model also gets confused when context grows too long.
+A fork drops nothing, and it trims nothing either. It carries all the background across, at the price of a window that starts large and costs more. The main conversation keeps growing too, until it has to be compacted, and compaction is lossy: details go missing. A model also gets confused when context grows too long.
 
-So I think the best answer for context has to be designed on purpose from the start. It doesn't grow out of a conversation that just keeps going. What multi-agent is really for is giving the AI a good environment for managing context, organised around the task itself.
+Looking back, what multi-agent is really good for is at the other end: it gives each piece of work a clean context of its own. Take away the names and the roles, and what is left is a way of managing context. What multi-agent is really for is giving the AI a good environment for managing context, organised around the task itself.
+
+| Approach | The context for each piece of work | The words in it |
+| --- | --- | --- |
+| Multi-agent | Clean, one per piece of work | Paraphrased: some lost, some added |
+| Fork | Carries the whole history | Unchanged |
+| A context pack designed from the start | Clean, one per piece of work | Your own words, verbatim |
+
+I want both. So I think the best answer for context has to be designed on purpose from the start. It doesn't grow out of a conversation that just keeps going.
 
 ## Designed from the start: the person says three things, the AI splits the work
 
@@ -158,7 +181,7 @@ That pack is the thing to maintain over time. In the product it comes down to th
 
 - **Your own words go in verbatim.** When the project assistant cites your sentence in opening a task, the server passes it to the executor as written. Anything the assistant adds is marked separately and doesn't count as your request.
 - **Progress is written back.** Deliveries, questions and failures are recorded on the task. State follows the job, not the session.
-- **Only what is useful goes in.** Large material sits in the project's shared files and only the path is passed. Memory and the timeline contribute only the part that concerns this job, each item with its source.
+- **Only what is useful goes in.** Large material sits in the project's shared files and only the path is passed. What the personal assistant brings over from the timeline and memory comes with its source, as reference only, and doesn't count as your request.
 - **Definite judgments go to code.** Whose words count as authorisation, whether a quote really is in the original message, whether the same thing was raised twice: code checks these and the model only interprets.
 
 ## Agents are tools, and a runtime can always be started again
@@ -175,9 +198,13 @@ I'm not sure DS-buddy's current design is the best one. But these shouldn't be d
 
 ## Today's products expose too much
 
-Multica and Raft both offer a very good layer of abstraction. Multica uses tickets: agents pick up issues on a board and write results as comments. Raft uses group chat: agents sit in channels, read when they are @-mentioned, and claim tasks themselves. These are good ways to organise, and results land on a shared record that people and other agents can see.
+I have looked at a lot of similar products and learned a lot from them.
 
-It still isn't effortless enough. Someone has to set up the channel, usually open the issue, and often decide who takes what. For a person, building context and dividing up the work is itself hard work. Ideally the AI does that layer.
+Multica and Raft both offer a very good layer of abstraction. Multica uses tickets: agents pick up issues on a board and write results as comments. Raft uses group chat: agents sit in channels, read when they are @-mentioned, and claim tasks themselves. These are good ways to organise, and results land on a shared record that people and other agents can see. Claude Projects goes another way: several conversations in a project share one set of material and instructions, with no agent layer at all, but only with Claude's models, and the material is mostly put there by the person.
+
+I borrowed all of these: a lasting record for each piece of work, results landing where everyone can see them, and several conversations in a project sharing their background.
+
+It still isn't effortless enough. In Multica and Raft the agents still stand at the front: someone has to set up the channel, usually open the issue, and often decide who takes what. For a person, building context and dividing up the work is itself hard work, so the glue work has only moved somewhere else. Ideally the AI does that layer.
 
 | Architecture | How context gets in | Organised by | What you manage | How you know it's your turn |
 | --- | --- | --- | --- | --- |
@@ -212,7 +239,24 @@ Two boundaries:
 
 Files on your computer go another way: a small program on your computer connects out, and your computer decides which folders it may read.
 
+### Collecting context automatically is nothing new
+
+| Product | How it collects | What the collection is for |
+| --- | --- | --- |
+| [Screenpipe](https://screenpi.pe/) | Records screen and audio continuously, on your machine | A searchable history that other AI tools can query over MCP |
+| [AirJelly](https://www.airjelly.ai/) | Reads the active window of the apps you allow | Rewind and chat, and Codex or Claude Code can recall this context |
+| [Littlebird](https://littlebird.ai/) | Reads the text of the active window through accessibility without recording the screen, and transcribes meetings | A memory for its own assistant to use |
+| Computer History in Codex | Logs clicks, typing and app switches through accessibility, takes no screenshots, off by default | Local memory files for ChatGPT and Codex |
+
+This table follows each product's public material and press coverage. For reading the screen, DS-buddy uses Screenpipe itself.
+
+From what I have seen, they mostly stop at remembering and being searchable: the context is stored, and a person or an agent fetches it when needed. Proposing a piece of work from the context it has seen, splitting it, getting it done and bringing it back to you for the call: that loop is still left for the person to close.
+
+It is the loop DS-buddy wants to close. The timeline goes into the context layer, where the personal assistant can read it at any time and every entry can be checked against its source. When it hands a job to a project, what goes across is your own words and the related material. Messages someone is waiting for you to answer are noted in Waiting on you. At night it reviews the day and leaves up to three cards for the morning. When work is finished, it comes back to that same board.
+
 ## You only make the calls
+
+I think this is how we will work: people speak only where they are really needed, to state a preference, make a trade-off, give the one piece of direction that matters, and stop being carriers of information.
 
 Once things run in parallel, the hard part is keeping track. Waiting on you is one board across projects that lists only what needs you: decisions, acceptances, failures, and messages someone is waiting for you to answer.
 
@@ -224,7 +268,7 @@ Once things run in parallel, the hard part is keeping track. Waiting on you is o
 
 ## Tacit, as in tacit understanding
 
-The assistant inside is called Tacit by default, as in tacit understanding. I think a really good buddy should already know everything relevant to the job before you open your mouth.
+The assistant inside is called Tacit by default, as in tacit understanding. I think a really good buddy should already know everything relevant to the job before you open your mouth. By then you won't need to know how many agents are behind it, or what they are called.
 
 ![The chat on the left says "remember", the memory page on the right shows the item with the original words](img/u6-memory.jpg "What I said on the left, the item in the memory page on the right, with my original words under it.")
 
