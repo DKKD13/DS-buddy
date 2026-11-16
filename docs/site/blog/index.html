@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>介绍 DS-buddy：只说目标，只管拍板 | DS-buddy</title>
-<meta name="description" content="这一年的 agent 产品，越做越像一个团队：agent 有名字，有分工，有自己的频道和工单，人在中间 @ 来 @ 去。agent 越来越能干，用它的人却越来越忙。给这个讲一遍背景，把那个的结论搬过去，盯着谁跑完了、谁卡…">
+<title>介绍 DS-buddy，你的下一个 agent 产品不一定需要有 agent | DS-buddy</title>
+<meta name="description" content="Hi 大家～">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="DS-buddy">
-<meta property="og:title" content="介绍 DS-buddy：只说目标，只管拍板">
-<meta property="og:description" content="这一年的 agent 产品，越做越像一个团队：agent 有名字，有分工，有自己的频道和工单，人在中间 @ 来 @ 去。agent 越来越能干，用它的人却越来越忙。给这个讲一遍背景，把那个的结论搬过去，盯着谁跑完了、谁卡…">
+<meta property="og:title" content="介绍 DS-buddy，你的下一个 agent 产品不一定需要有 agent">
+<meta property="og:description" content="Hi 大家～">
 <meta property="og:url" content="https://dkkd13.github.io/tacit-dsh/site/blog/">
 <meta property="og:image" content="https://dkkd13.github.io/tacit-dsh/site/blog/img/film-closing.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -34,21 +34,29 @@
   <article>
     <header>
       <p class="kick">我的 AI 产品实践</p>
-      <h1>介绍 DS-buddy：只说目标，只管拍板</h1>
+      <h1>介绍 DS-buddy，你的下一个 agent 产品不一定需要有 agent</h1>
       <p class="meta">DS-buddy <i>·</i> 2026/11/16</p>
       
     </header>
-<p>这一年的 agent 产品，越做越像一个团队：agent 有名字，有分工，有自己的频道和工单，人在中间 @ 来 @ 去。agent 越来越能干，用它的人却越来越忙。给这个讲一遍背景，把那个的结论搬过去，盯着谁跑完了、谁卡住了。</p>
-<p>我的看法不同。一个 agent 拆开看，就是一份上下文加一个模型。管理 agent，就是管理上下文。一个真正好的 agent 产品，不需要把 agent 这一层摆到人面前。</p>
-<p>DS-buddy 是照这个想法做的，DeepSeek Harness 的一个开源插件。你说一句目标，它把没说清的问清楚，拆成几个任务同时去做，做完把成品交到你面前。你面对的只有项目、任务和一块「待你决定」的看板。</p>
-<p>对你每天的工作，这意味着几件事。</p>
-<p><strong>你只说三件事。</strong>要做什么，上下文在哪，标准是什么。比如：「根据『岗位描述.md』写一份二面题目 interview.md：3 道动效和交互细节相关的题，每题附评分要点。」它开出一个任务，带着这句话和那份文件去做，交回来的就是 interview.md。</p>
-<p><strong>每件事一份自己的上下文。</strong>每个任务带着一份记录：目标，你的原话，怎么算完成，做到哪了。干活的 agent 只是工具，默认是 DeepSeek Harness 的一个会话，也可以换成 Claude Code，换了记录还在。你的话逐字带进去。早先的版本里，助理转交时改写了我的话，还补了几条我没说过的要求，一两分钟就能交付的事拖到了 11.6 分钟。现在转交只能引用原话，由代码核对。</p>
-<p><strong>上下文自己进来。</strong>屏幕上在做的事和飞书里的消息，每 10 分钟整理成一条时间线，认得出属于哪个项目的就归过去。电脑里的文件，需要时去读。全部只读，随时能关。</p>
-<p><strong>该你的时候才找你。</strong>要你拍板的，等你验收的，出了错的，别人在等你回的消息，都在「待你决定」里。夜里它把这一天过一遍，早上最多留三张卡。只有你点了验收，一件事才算完。</p>
-<p>里面那个一直在的助理，默认叫 Tacit，取「默会」的意思：在你开口之前，就已经了解和这件事有关的上下文。它只记你亲口说过的话，不替你拍板，也不替你发消息。</p>
-<p>DS-buddy 还很早。项目还得你自己建，Codex 当执行者还没完整验证，界面只有中文。它需要 DeepSeek Harness 0.2.x 和 Node 24，装法在 <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a> 的 README 里，MIT 许可。为什么这么设计，写在<a href="deep/">长文</a>里。</p>
-<p>只说目标，只管拍板。</p>
+<p>Hi 大家～</p>
+<p>今天做应用产品，最前面、最核心的问题，就是去降低人和 AI 之间沟通的带宽。这也解释了为什么我不认同现在多 agent 产品的组织方式。我们常常面临的困境是：我们疲于奔命，绝大多数时候都在扮演胶水的角色，却缺少真正的时间来思考，给出正确的方向。因此我们需要一种更加高效的、和 agent 协作的方式，也就是对 context 的最佳管理。管理 agent 就是管理 context，而我们并不需要 agent 这个概念。</p>
+<p>从 project 说起：一个 project 里多个对话围绕着共同的主题，和多个 agent 围绕着同一个主题，区别是什么？实际上没有区别。对话对 agent 来说是一种 session，一种持续、单向地组装 context 的方式，但它既不是人的方式，也不是围绕任务的方式。</p>
+<p>各家对场景的抽象，为什么都先走向了 agent？因为我们习惯了通过人来组织上下文，习惯了各司其职。但对 agent 来说，实际上我们需要的只是上下文和模型（agent 是部分的上下文加部分的模型）。agent 是不必要的一层抽象，反而会带来一些误解和翻车。</p>
+<p>让 agent 之间传递通信，绝大多数时候是不必要的。就像人和人之间传话会产生误差一样，多 agent 也会产生误差，还增加了不必要的通讯成本，我们不需要它。同时，agent 和 agent 之间的差别，比人和人之间的差异小得多，更重要的是模型上的差异。</p>
+<p>这也是为什么 fork 绝大多数时候比多 agent 好用：fork 实际上就是共享上下文，而多 agent 在上下文传递的过程中反而容易产生损失。</p>
+<p>但是 fork 没有办法解决主对话冗长的问题。所以最佳的上下文解决方案，一定是在一开始就有意识地设计，而不是随着对话精进。</p>
+<p>所以说，多 agent 本质上是为了给 AI 创造一个很好的 context 管理的环境，围绕着任务的本质去构建我们的上下文。</p>
+<p>构建的方向不应该是人类来控制，组建频道、@ 这些。人只需要讲清楚要做什么、上下文在什么地方、标准是什么就可以了，然后 AI 把它们拆解成一个一个任务（thread）的上下文包，每次维护。上下文包可以粗略理解为一个类似 goal 的文件，这是我们真正要长期维护的，每次注入，每次更新。</p>
+<p>而那些临时的 agent，其实都是 tool。它们的状态实际上是脆弱的，就是一个 runtime，每次重新注入就好了，实际上不太需要维护。</p>
+<p>（当然，这里还涉及每个 agent 启动的时候上下文怎么组织，是不是重新起一个 context，以及怎么围绕缓存去节省 token。）这里我们的设计我不确定是不是最好的，但这些不应该是用户感知到的细节。</p>
+<p>因此，这也是我构建 DS-buddy 的核心出发动机。现在市面上类似的多 agent 产品都过度暴露了。它们提供了非常好的一层抽象，比如 Multica、Raft，通过群聊、通过工单的传递，确实很好地提供了一种组织方式，但仍然不够便捷。</p>
+<p>因为对人来说，构建 context、做分工也是一件费力的事情。而在真正理想的状态下，应该让 AI 自己完成这一层。</p>
+<p>而一个好的 AI 要能完成这一层，首先需要摄入你足够多的 context。在 Multica 和 Raft 里，任务和项目的划分多半还是人在做，而不是 AI，实际上让 AI 来做才是最好的解决方案。这就引入了我们最重要的一个设计：上下文的收集。通过源源不断地从各个信息源收集，AI 获得了足够多的了解。</p>
+<p>DS-buddy 提供了一种自动获取的方式。这也不是一件新鲜的事情，以 Screenpipe 为代表，还有 AirJelly、Littlebird，包括 Codex 内置的 Computer History，都早就存在了，但是它们大多没有打通从 context 到行动的循环。</p>
+<p>我认为这是未来的工作模式：人只在真正的接入口表达喜好、价值，给出关键的指引，而不是像今天这样沦为信息的搬运工，伤害注意力。（研究注意力的 <a href="https://news.gallup.com/businessjournal/23146/too-many-interruptions-work.aspx">Gloria Mark</a> 发现，被打断的工作，平均要 23 分钟才会被重新接上。）</p>
+<p>市面上类似的产品很多，Claude Projects、Raft、Multica 等等。但是 Claude Projects 局限于 Claude 的模型，Raft 和 Multica 还是强调智能体的概念，而我认为这是不必要的。不过它们对于底层的抽象，我觉得是做得很好的，我借鉴了它们的思路和构造方式。</p>
+<p>最后，我们核心的助理，名字默认叫 Tacit，内涵是默会，心领神会。因为我认为，真正好的 buddy 应该在你开口之前，就了解一切相关的上下文。</p>
+<p>DS-buddy 是 DeepSeek Harness 的一个开源插件，代码在 <a href="https://github.com/DKKD13/tacit-dsh">GitHub</a>，设计细节写在<a href="deep/">长文</a>里。</p>
   </article>
 </main>
 
