@@ -4,9 +4,8 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 
 let client
-runInNewContext(readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8'), {
-  window: { __ModuleLoader__: { load(definition) { client = definition.factory(() => ({})) } } },
-})
+const fakeWindow = { __ModuleLoader__: { load(definition) { client = definition.factory(() => ({})) } } }
+runInNewContext(readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8'), { window: fakeWindow })
 // Arrays made inside the client's own context are compared as text: deepStrictEqual sees another realm's prototype.
 const same = (actual, expected, message) => assert.equal(JSON.stringify(actual), JSON.stringify(expected), message)
 
@@ -94,4 +93,15 @@ test('the @ menu does not show a data path under a conversation that works in th
   ]
   same(client.titledOnly(rows).map(r => r.description), ['6分钟', '2小时', '', '~/code/site · 3分钟', '~/data/_folders/p_1a2b3c4d5e/发布会/notes.md'])
   assert.equal(rows[0].description.startsWith('~/.local'), true, 'the host\'s own row objects are left as they were')
+})
+
+test('a right panel starts open where it fits beside the conversation and closed on a narrow screen', () => {
+  assert.equal(client.panelFits(), true, 'no matchMedia: assume it fits')
+  const asked = []
+  fakeWindow.matchMedia = query => { asked.push(query);return { matches: true } }
+  assert.equal(client.panelFits(), false, 'at 900px or narrower the panel is laid over the conversation, so it starts closed')
+  assert.equal(asked[0], '(max-width:900px)', 'the same breakpoint as the stylesheet rule that turns the panel into an overlay')
+  fakeWindow.matchMedia = () => ({ matches: false })
+  assert.equal(client.panelFits(), true)
+  delete fakeWindow.matchMedia
 })

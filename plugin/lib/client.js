@@ -2150,6 +2150,8 @@ window.__ModuleLoader__.load({
 			navigateProject(projectId, thread && thread.id);
 		}
 
+		/** Whether a right panel can stand beside the conversation; below 900px it is laid over it (see .mp4-panel). */
+		function panelFits() { return !(window.matchMedia && window.matchMedia("(max-width:900px)").matches); }
 		/**
 		 * Once the Session is on screen, open the given tabs (the last one ends up in front) and expand the panel.
 		 * The right panel acts on the on-screen Session and throws until its store exists (a render later), so retry.
@@ -2623,7 +2625,7 @@ window.__ModuleLoader__.load({
 
 		function ProjectSession({ project, projects, threadId, onCreate }) {
 			const tabs = usePanelTabs("project", ["ptasks"]);
-			const [panelOpen, setPanelOpen] = useState(true), [wide, setWide] = useState(false), [peek, setPeek] = useState(threadId || null);
+			const [panelOpen, setPanelOpen] = useState(panelFits), [wide, setWide] = useState(false), [peek, setPeek] = useState(threadId || null);
 			useEffect(() => { if (threadId) { setPeek(threadId); tabs.open("peek"); setPanelOpen(true); } }, [threadId]);
 			const reading = useReadingPosition(true, project.id, project.chat.length);
 			const openThread = id => {
@@ -3529,7 +3531,7 @@ window.__ModuleLoader__.load({
 			const [older, setOlder] = useState({ messages: [], hasMore: undefined }), [loadingOlder, setLoadingOlder] = useState(false);
 			const [retrying, setRetrying] = useState(false), [retryError, setRetryError] = useState(null);
 			const [dialog, setDialog] = useState(null), [sourceRef, setSourceRef] = useState(() => new URLSearchParams(window.location.hash.split("?")[1] || "").get("source"));
-			const [panelOpen, setPanelOpen] = useState(true), [wide, setWide] = useState(false);
+			const [panelOpen, setPanelOpen] = useState(panelFits), [wide, setWide] = useState(false);
 			const tabs = usePanelTabs("home", ["inbox", "time"]);
 			useEffect(() => { if (sourceRef) tabs.open("source"); }, [sourceRef]);
 			const messages = [...new Map([...older.messages, ...(snap.messages || [])].map(m => [m.id, m])).values()].sort((a, b) => a.seq - b.seq);
@@ -5216,6 +5218,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 .mp4-kb-x{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:9px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;color:var(--mp4-fg3);background:var(--mp4-bg);opacity:0;transition:opacity 250ms ease-out,background 250ms ease-out}
 .mp4-kb-card:hover .mp4-kb-x,.mp4-kb-x:focus-visible{opacity:1}.mp4-kb-x:hover{background:var(--rx-gray-4);color:var(--mp4-fg)}@media (hover:none){.mp4-kb-x{opacity:1}}
 .mp4-kb-card:has(.mp4-kb-x):hover .mp4-kb-when{visibility:hidden}
+@media (hover:none){.mp4-kb-card:has(.mp4-kb-x) .mp4-kb-top{padding-right:26px}}
 .mp4-kb-more{all:unset;box-sizing:border-box;cursor:pointer;padding:4px 6px;font-size:12px;line-height:18px;color:var(--mp4-fg3)}.mp4-kb-more:hover{color:var(--mp4-fg)}
 .mp4-ib-empty{margin:0;padding:48px 8px;font-size:13px;line-height:20px;color:var(--mp4-fg3);text-align:center}
 `;
@@ -5380,7 +5383,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 		exports.skillDiff = skillDiff; exports.kanbanLine = kanbanLine; exports.STATUS_LOOK = STATUS_LOOK; exports.bannerOf = bannerOf; exports.timelineRows = timelineRows; exports.deliveredFiles = deliveredFiles; exports.sizeLabel = sizeLabel;
 		exports.mentionCandidates = mentionCandidates; exports.deliveryOrder = deliveryOrder; exports.titledOnly = titledOnly; exports.mentionClipboard = mentionClipboard; exports.mentionText = mentionText; exports.mentionNames = mentionNames; exports.mentionRule = mentionRule; exports.iconSpec = iconSpec; exports.modelName = modelName; exports.executorOf = executorOf; exports.shownName = shownName; exports.isProjectExecutor = isProjectExecutor; exports.taskStatus = taskStatus; exports.projectLook = projectLook; exports.layoutTimeline = layoutTimeline; exports.readWake = readWake; exports.wakeMessages = wakeMessages; exports.typedInSession = typedInSession; exports.workspaceScene = workspaceScene; exports.miraScene = miraScene; exports.sceneShift = sceneShift; exports.isTemplate = isTemplate; exports.lookCells = lookCells; exports.lookPortrait = lookPortrait; exports.bestTemplate = bestTemplate; exports.hotkeyFrom = hotkeyFrom; exports.hotkeyMatches = hotkeyMatches; exports.hotkeyLabel = hotkeyLabel; exports.LOOK_TEMPLATES = LOOK_TEMPLATES; exports.LINE_BODIES = LINE_BODIES; exports.LINE_ACCESSORIES = LINE_ACCESSORIES; exports.ICONS = ICONS; exports.PROJECT_TINTS = PROJECT_TINTS; exports.PROJECT_ICON_NAMES = PROJECT_ICON_NAMES; exports.PROJECT_ICON_SHAPES = PROJECT_ICON_SHAPES;
 		exports.createRevisionFeed = createRevisionFeed;
-		exports.pickAsk = pickAsk; exports.inboxProjects = inboxProjects; exports.inboxNotes = inboxNotes; exports.noteAsks = noteAsks; exports.suggestionsFor = suggestionsFor;
+		exports.pickAsk = pickAsk; exports.inboxProjects = inboxProjects; exports.inboxNotes = inboxNotes; exports.noteAsks = noteAsks; exports.suggestionsFor = suggestionsFor; exports.panelFits = panelFits;
 		return module.exports;
 	}
 });

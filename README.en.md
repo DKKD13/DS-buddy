@@ -46,7 +46,7 @@ You need DeepSeek Harness (tested on 0.2.1) and Node 24 or later. If you do not 
 ```sh
 git clone https://github.com/DKKD13/tacit-dsh
 cd tacit-dsh/plugin
-npm test                                 # 487 unit tests, optional
+npm test                                 # 488 unit tests, optional
 dsh plugin --profile web add "$(pwd)"    # add the plugin to DeepSeek Harness
 dsh --profile web                        # start it and open the address it prints
 ```
@@ -75,7 +75,7 @@ Where each feature was learned from and which tests back it: [`docs/FEATURES.md`
 
 ## Where it stands
 
-- Version 1.0, MIT license. 487 automated tests, run on Linux and macOS.
+- Version 1.0, MIT license. 488 automated tests, run on Linux and macOS.
 - It runs only inside DeepSeek Harness. The interface is in Chinese for now. Feishu is read-only.
 - Claude Code as an executor has been run for real. For Codex, switching and start-up were tried, but a full task run on its own model has not been verified yet.
 - Claude Code and Codex run without permission prompts or a sandbox: they can read and write whatever your OS user can.
