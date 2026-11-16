@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide: working with Tacit | DS-buddy</title>
+<meta name="description" content="In DS-buddy you mostly deal with two things: the personal assistant, Tacit, and one board called Waiting on you. Here is a first session, step by step. The interface is in Chinese for now; the labels below are translated…">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="DS-buddy">
+<meta property="og:title" content="Guide: working with Tacit">
+<meta property="og:description" content="In DS-buddy you mostly deal with two things: the personal assistant, Tacit, and one board called Waiting on you. Here is a first session, step by step. The interface is in Chinese for now; the labels below are translated…">
+<meta property="og:url" content="https://dkkd13.github.io/tacit-dsh/site/blog/en/guide/">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+<script>try{var t=localStorage.getItem("tacit-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head>
+<body>
+<div class="page">
+<aside class="side">
+  <a class="brand" href="../../en/"><span>DS-buddy</span></a>
+  <nav><a href="../../en/">Introduction</a><a href="../../en/deep/">Architecture</a><a class="on" href="../../en/guide/">Guide</a><a href="https://github.com/DKKD13/tacit-dsh">GitHub</a></nav>
+</aside>
+<main>
+  <div class="bar">
+    <a class="brand sm" href="../../en/"><span>DS-buddy</span></a>
+    <span class="sp"></span>
+    <button class="theme" type="button" aria-label="Toggle theme" title="Toggle theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
+    <span class="langs"><a href="../../guide/" lang="zh-CN">中文</a><i>/</i><a href="../../en/guide/" class="on" aria-current="page" lang="en">EN</a></span>
+  </div>
+  <article>
+    <header>
+      <p class="kick">Notes on building AI products</p>
+      <h1>Guide: working with Tacit</h1>
+      <p class="meta">DS-buddy <i>·</i> 16 Nov 2026</p>
+      
+    </header>
+<p>In DS-buddy you mostly deal with two things: the personal assistant, Tacit, and one board called Waiting on you. Here is a first session, step by step. The interface is in Chinese for now; the labels below are translated.</p>
+<h2 id="s1">1. Install</h2>
+<p>You need DeepSeek Harness 0.2.x and Node 24 or later. If you don't have DeepSeek Harness yet: <code>npm install -g @deepseek-ai/dsh</code>.</p>
+<pre><code>git clone https://github.com/DKKD13/tacit-dsh
+cd tacit-dsh/plugin
+dsh plugin --profile web add "$(pwd)"
+dsh --profile web</code></pre>
+<p>Open the address it prints. The sidebar gains a personal assistant and projects. Models follow your DeepSeek Harness configuration.</p>
+<p>Optional: with the Claude Code or Codex command line installed, tasks can be switched to them; with the Feishu command line (lark-cli) installed and authorised, Tacit can read your Feishu messages, read-only.</p>
+<h2 id="s2">2. Meet Tacit</h2>
+<p>The first time, you land in the personal assistant's conversation, with Waiting on you on the right. The assistant is called Tacit by default. A small two-step window follows: pick up to three personality traits, give it a name, and set a shortcut to call it up (⌥M by default). Skip it if you like; it can be changed later under assistant settings, look and shortcut.</p>
+<p>The pixel square at the bottom right is a desk pet: spinning blue means it is working, one yellow dot means something is waiting for you, a green tick means done. It can be turned off.</p>
+<p>Start by telling it: "Remember: I like to read the conclusion first, then the details." It goes into About you with your own words, and every conversation knows it from then on.</p>
+<figure class="shot"><a href="../../img/u6-memory.jpg"><img src="../../img/u6-memory.jpg" alt="On the left, telling Tacit to remember; on the right, the item in the memory page with the original words" loading="lazy"></a><figcaption>Tell Tacit to remember something and it goes into About you, with your own words below it.</figcaption></figure>
+<h2 id="s3">3. What you can ask Tacit to do</h2>
+<p>Tacit doesn't work inside projects; it watches all of them. In the personal conversation it does what you explicitly ask:</p>
+<div class="tw"><table><thead><tr><th>You say</th><th>What it does</th></tr></thead><tbody><tr><td>"Make me a project: hiring a front-end engineer"</td><td>Creates a project</td></tr><tr><td>"Give this to the hiring project: …"</td><td>Hands your own words to the project as written, which opens a task; anything it adds is marked separately</td></tr><tr><td>"What's waiting for me?" "What happened today?"</td><td>Answers from the board and the timeline, each item with its source</td></tr><tr><td>"What was just said in the marketing group?"</td><td>Reads the Feishu messages it has collected</td></tr><tr><td>"Tell the interview-questions task to add a CSS question"</td><td>Passes the message to that task</td></tr><tr><td>"The second option is fine"</td><td>Answers a decision that is waiting on you</td></tr><tr><td>"Accept it"</td><td>Tells you what changed first, and accepts after you reply "confirm"</td></tr><tr><td>"Remember: …"</td><td>Adds it to About you, with your words</td></tr><tr><td>"Look at that contract on my computer"</td><td>Reads the folders you allowed, read-only</td></tr><tr><td>"Use a cheaper model for this project from now on"</td><td>Records it as the project's model strategy, then switches models accordingly</td></tr><tr><td>"Delete that test project"</td><td>Moves it to the trash, where it can be restored at any time</td></tr></tbody></table></div>
+<p>It doesn't send messages in your name. Without a word from you it makes no decision and accepts nothing.</p>
+<h2 id="s4">4. Hand over the first job</h2>
+<ol><li>Click + next to projects in the sidebar and give the project a name. You can give it a folder for the executor to work in; otherwise a workspace with the same name is created. You can also just ask Tacit to make a project.</li><li>In the project conversation, say one sentence that makes three things clear: what to do, where the context is, and what the standard is. For example: "Using the job description, write a second-round interview set, interview.md: 3 questions on motion and interaction detail, each with scoring points." You can say the same sentence to Tacit, and it hands your words to the project unchanged.</li><li>The project assistant starts on whatever it can and asks about what you left unclear. Just answer.</li></ol>
+<figure class="shot"><a href="../../img/guide-project.jpg"><img src="../../img/guide-project.jpg" alt="The project conversation: one sentence opens a task, and after delivery it says the work is waiting for your acceptance" loading="lazy"></a><figcaption>The project conversation. One sentence opens a task; after delivery it tells you it is waiting for your acceptance.</figcaption></figure>
+<h2 id="s5">5. See how far a task has got</h2>
+<p>The tasks it opened are listed under project tasks on the right. Click one and the task details appear: background and your own words, what counts as done, outputs, files read, and progress. This is the context pack of that job.</p>
+<figure class="shot"><a href="../../img/guide-task.jpg"><img src="../../img/guide-task.jpg" alt="Task details: background, your words, what counts as done 4/4, outputs, files read, progress" loading="lazy"></a><figcaption>Task details. The executor ticks off what counts as done itself.</figcaption></figure>
+<p>To switch the executor: task details, execution, execution mode. Switch between DeepSeek Harness, Claude Code and Codex; the model can be changed on its own too. To do it yourself, click take over, and hand back when you are done. Note: Claude Code and Codex run as executors without permission prompts and without a sandbox; they can read and write whatever your OS user can.</p>
+<h2 id="s6">6. Accept, and make the calls</h2>
+<p>When a task is done it appears in the first lane of Waiting on you.</p>
+<ul><li>Click the card to open the task. Under delivery, web pages render in place, images show directly and documents are previewed.</li><li>Happy with it: click accept, or tell Tacit "accept it".</li><li>Want changes: click request changes on a file. The composer is pre-filled with the file name; write what to change.</li><li>When an executor needs a decision from you mid-way, it gives you a card of options with the recommended one marked; if none fits, just type your answer.</li></ul>
+<h2 id="s7">7. Waiting on you</h2>
+<p>One board, three lanes: waiting on you, in progress, done today. Tasks, Feishu messages waiting for your reply and reminders from Tacit are all cards. Click a task card to open the task; click a message card and a reply is drafted in the composer for you to edit and send.</p>
+<figure class="shot"><a href="../../img/guide-board.jpg"><img src="../../img/guide-board.jpg" alt="Waiting on you: tasks and a Feishu reminder in the first lane, a task in progress in the second" loading="lazy"></a><figcaption>Waiting on you. Cards have no buttons: one click opens the task, or drafts the reply in the composer.</figcaption></figure>
+<h2 id="s8">8. Let context come in by itself</h2>
+<p>All of these are read-only and can be turned off at any time:</p>
+<ul><li><strong>Feishu</strong>: assistant settings, live Feishu reading. Once authorised, Tacit can read messages and documents but can't send. When someone is waiting for your reply, it shows up on Waiting on you; whether to be reminded proactively is a separate setting.</li><li><strong>Files on your computer</strong>: assistant settings, computer files. Choose specific folders or all files, or pause it.</li><li><strong>Screen</strong>: run the DS-buddy device program on a computer that has Screenpipe. It reads the text of the windows once a minute and sends text only; screenshots stay on the computer. Every 10 minutes the activity is organised into a timeline, filed under a project when it is clear which one.</li></ul>
+<figure class="shot"><a href="../../img/shot-timeline.jpg"><img src="../../img/shot-timeline.jpg" alt="The timeline: each activity with the apps used and the project it belongs to" loading="lazy"></a><figcaption>The timeline.</figcaption></figure>
+<h2 id="s9">9. Memory, models, and the night review</h2>
+<ul><li><strong>Memory</strong>: assistant settings, advanced, memory. Every item in About you carries your words and can be edited or forgotten; every item in Work carries its source.</li><li><strong>Assistants and models</strong>: assistant settings, advanced, assistants and models. One page per assistant: when it wakes, what it reads each turn, which model it uses. A project's model strategy can be written in one sentence.</li><li><strong>The night review</strong>: when the computer is idle at night, Tacit reviews the day and leaves up to three items in the first lane for the morning: one thing that could be done, one worth a look, and one remark, each with its source, plus a diary page.</li><li><strong>Working instructions</strong>: when you raise the same problem after delivery three times, it drafts new working instructions overnight. In the morning you choose: the new version, one trial run, or the old version.</li></ul>
+<h2 id="s10">10. When something goes wrong</h2>
+<div class="tw"><table><thead><tr><th>What you see</th><th>What to do</th></tr></thead><tbody><tr><td>The page says it can't reach the service and is reconnecting</td><td>The service stopped or is restarting. When it comes back the page reconnects by itself; no need to log in again.</td></tr><tr><td>A task is stuck on failed</td><td>Open the task and read the last progress entry. It is usually a model or network error; tell it to carry on.</td></tr><tr><td>Nothing happens after switching to Codex</td><td>Codex has to be logged in on this machine itself. Without that it reports an error and stops.</td></tr></tbody></table></div>
+<p>All the data stays on the machine that runs it. Feishu and your files are read-only, and only the parts you allow. Deleting a project moves it to the trash, where it can be restored at any time.</p>
+  </article>
+</main>
+<aside class="toc" aria-label="On this page"><div><a class="l2" href="#s1">1. Install</a><a class="l2" href="#s2">2. Meet Tacit</a><a class="l2" href="#s3">3. What you can ask Tacit to do</a><a class="l2" href="#s4">4. Hand over the first job</a><a class="l2" href="#s5">5. See how far a task has got</a><a class="l2" href="#s6">6. Accept, and make the calls</a><a class="l2" href="#s7">7. Waiting on you</a><a class="l2" href="#s8">8. Let context come in by itself</a><a class="l2" href="#s9">9. Memory, models, and the night review</a><a class="l2" href="#s10">10. When something goes wrong</a></div></aside>
+</div>
+<script>
+document.querySelector(".theme").addEventListener("click",function(){var r=document.documentElement,d=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=d==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("tacit-theme",n)}catch(e){}});
+</script>
+</body>
+</html>

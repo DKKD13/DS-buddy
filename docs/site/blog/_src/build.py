@@ -169,6 +169,9 @@ def convert(md, lang, rel=""):
             n2 += 1; n3 = 0; hid = f"s{n2}"; toc.append((2, hid, first[3:].strip())); out.append(f'<h2 id="{hid}">{inline(first[3:].strip())}</h2>')
         elif first.startswith("### "):
             n3 += 1; hid = f"s{n2}-{n3}"; toc.append((3, hid, first[4:].strip())); out.append(f'<h3 id="{hid}">{inline(first[4:].strip())}</h3>')
+        elif first.startswith("```"):
+            code = "\n".join(l for l in lines[1:] if not l.startswith("```"))
+            out.append(f'<pre><code>{html.escape(code, quote=False)}</code></pre>')
         elif first.startswith("{{fig:"):
             name, cap = first[6:-2].split("|", 1)
             out.append(f'<figure class="dia">{FIGS[name](L[lang], cap)}<figcaption>{inline(cap)}</figcaption></figure>')
@@ -194,8 +197,8 @@ def convert(md, lang, rel=""):
     return title, dek, "\n".join(out), toc, kicker
 
 # ---------------------------------------------------------------- page
-UI = {"zh": dict(lang="zh-CN", post="短文", deep="长文", toc="目录", date="2026/11/16", theme="切换深浅色", by="DS-buddy"),
-      "en": dict(lang="en", post="Short", deep="Long read", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="DS-buddy")}
+UI = {"zh": dict(lang="zh-CN", post="介绍", deep="工程架构", guide="使用说明", toc="目录", date="2026/11/16", theme="切换深浅色", by="DS-buddy"),
+      "en": dict(lang="en", post="Introduction", deep="Architecture", guide="Guide", toc="On this page", date="16 Nov 2026", theme="Toggle theme", by="DS-buddy")}
 SITE = "https://dkkd13.github.io/tacit-dsh/site/blog/"   # where the pages are served; change it if the repository is renamed
 MARK = '<svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M5 5h20v6h-7v14h-6V11H5z"/></svg>'
 def page(lang, title, dek, body, toc, rel, sub, kicker="", desc=""):
@@ -208,7 +211,7 @@ def page(lang, title, dek, body, toc, rel, sub, kicker="", desc=""):
     if lang == "zh": share += f'<meta property="og:image" content="{SITE}img/film-closing.jpg">\n<meta name="twitter:card" content="summary_large_image">\n'   # the picture carries Chinese text
     else: share += '<meta name="twitter:card" content="summary">\n'
     ON = ' class="on"'
-    nav = "".join("<a" + (ON if sub == s2 else "") + ' href="' + here(base + s2) + '">' + label + "</a>" for s2, label in (("", u["post"]), ("deep/", u["deep"])))
+    nav = "".join("<a" + (ON if sub == s2 else "") + ' href="' + here(base + s2) + '">' + label + "</a>" for s2, label in (("", u["post"]), ("deep/", u["deep"]), ("guide/", u["guide"])))
     toc_html = "".join(f'<a class="l{lv}" href="#{hid}">{html.escape(t)}</a>' for lv, hid, t in toc)
     aside = f'<aside class="toc" aria-label="{u["toc"]}"><div>{toc_html}</div></aside>' if toc else ""
     return f"""<!doctype html>
@@ -295,6 +298,8 @@ strong{color:var(--fg);font-weight:500}
 ul,ol{color:var(--p);margin:0 0 18px;padding-left:1.35em}
 li{margin:5px 0;padding-left:.15em}
 li::marker{color:var(--muted)}
+pre{font-family:var(--mono);font-size:13.5px;line-height:1.6;background:var(--soft);border-radius:8px;padding:14px 16px;margin:0 0 22px;overflow-x:auto;color:var(--fg)}
+pre code{background:none;padding:0;font-size:inherit;border-radius:0}
 code{font-family:var(--mono);font-size:.86em;background:var(--soft);padding:.12em .38em;border-radius:4px;color:var(--fg)}
 figure{margin:26px 0 28px}
 figure.shot a{display:block}
@@ -340,7 +345,8 @@ svg text{font-family:var(--sans);letter-spacing:0}
 @media print{.side,.toc,.bar{display:none}}
 '''
 
-PAGES = [("zh", "zh.md", "", "", ""), ("zh", "zh-deep.md", "deep/", "../", "deep/"),
+PAGES = [("zh", "zh.md", "", "", ""), ("zh", "zh-deep.md", "deep/", "../", "deep/"), ("zh", "zh-guide.md", "guide/", "../", "guide/"),
+         ("en", "en-guide.md", "en/guide/", "../../", "guide/"),
          ("en", "en.md", "en/", "../", ""), ("en", "en-deep.md", "en/deep/", "../../", "deep/")]
 def main():
     if OUT.exists(): shutil.rmtree(OUT)
