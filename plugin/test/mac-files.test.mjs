@@ -307,6 +307,36 @@ test('a file too large to search in time is reported as unfinished, not as searc
   assert.deepEqual([partly.files.map(file => [file.path, file.partial, file.hits[0].offset]), partly.complete, partly.unfinished], [[['huge.txt', true, 0]], false, undefined])
 })
 
+test('a walk too long for its limit asks for a smaller folder; after a long walk, looking inside files still gets its own time', async t => {
+  const { base, put } = folder(t, 'mira-reader-walk-')
+  // Four rounds of walking: the top, then a b c, then b/x c/x, then c/x/y.
+  for (const [name, hours] of Object.entries({ 'a/f1': 1, 'b/x/f2': 2, 'c/x/y/f3': 3 })) put(name + '.txt', `in ${name}: needle-word here\n`, hours)
+  const roots = [{ name: 'wide', label: '很多文件夹', path: base }]
+  // Each clock read moves 4 s: the second round already starts past the walk limit (twice the 1.5 s allowance).
+  let tick = 0
+  await assert.rejects(new MacReader({ roots, now: () => (tick += 4000), budgetMs: 1500 }).search({ root: 'wide', query: 'needle-word' }), /文件太多.*给 path 缩小/)
+  // Each read moves 0.5 s with a 1 s allowance: the walk ends 2 s after the start, past the allowance counted from the
+  // start, yet one more file is looked inside before time runs out, and carrying on finds the last one.
+  tick = 0
+  const reader = new MacReader({ roots, now: () => (tick += 500), budgetMs: 1000 })
+  const first = await reader.search({ root: 'wide', query: 'needle-word' })
+  assert.deepEqual([first.scannedFiles, first.files.map(file => file.path), Boolean(first.continueWith)], [2, ['a/f1.txt', 'b/x/f2.txt'], true])
+  const rest = await reader.search({ root: 'wide', query: 'needle-word', until: first.continueWith.until })
+  assert.deepEqual([rest.files.map(file => file.path), rest.complete], [['c/x/y/f3.txt'], true])
+})
+
+test('cookie exports and saved browser logins count as keys; files that only mention cookies do not', async t => {
+  const { base, put } = folder(t, 'mira-reader-cookie-')
+  const sessions = ['cookies.txt', 'malformed.cookies.txt', 'export/cookie-editor.json', 'storage-state.json', 'e2e/playwright-storage-state.json', 'storageState.json']
+  const plain = ['cookies.py', 'cookiecutter.json', 'notes/cookie-policy.md']
+  for (const rel of sessions) put(rel, 'session=live-value\n')
+  for (const rel of plain) put(rel, 'just text\n')
+  const reader = new MacReader({ roots: [{ name: 'dl', label: '下载', path: base }] })
+  for (const path of sessions) await assert.rejects(reader.read({ root: 'dl', path }), /密钥/, path)
+  for (const path of plain) assert.match((await reader.read({ root: 'dl', path })).text, /just text/, path)
+  assert.deepEqual((await reader.search({ root: 'dl' })).files.map(file => file.path).sort(), [...plain].sort())
+})
+
 test('what looks like a key is masked and ordinary prose is left alone', () => {
   for (const [text, masked] of [
     [`key ${KEY} end`, `key sk${MARK} end`],

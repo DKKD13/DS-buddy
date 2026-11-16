@@ -1,6 +1,6 @@
 # 测试报告（2026-11-16）
 
-结论：489 项自动化测试全部通过（Linux 和 macOS）。端到端走查记下的 28 条里，22 条已修，1 条改过但还有残留（第 20 条），2 条确认不是缺陷，3 条是有意的设计。代码定版后又从全新安装走了一遍，记下 7 条，复查时又发现 1 条，都已处理，其中 1 条只对新建的项目生效。下面逐条写了怎么验的，没验到的单独列出。
+结论：491 项自动化测试全部通过（Linux 和 macOS）。端到端走查记下的 28 条里，22 条已修，1 条改过但还有残留（第 20 条），2 条确认不是缺陷，3 条是有意的设计。代码定版后又从全新安装走了一遍，记下 7 条，复查时又发现 1 条，都已处理，其中 1 条只对新建的项目生效。下面逐条写了怎么验的，没验到的单独列出。
 
 ## 怎么跑
 
@@ -8,7 +8,7 @@
 cd plugin && npm test          # 约 1 分钟，全过为准
 ```
 
-## 自动化测试：489 项
+## 自动化测试：491 项
 
 | 范围 | 项数 | 主要测试文件 |
 | --- | --- | --- |
@@ -16,11 +16,11 @@ cd plugin && npm test          # 约 1 分钟，全过为准
 | 执行者与工作区 | 59 | `gitlab` 16、`worktrees` 10、`repositories` 10、`task-model` 9、`task-runner` 9、`runtime-takeover` 4 |
 | 个人助理与记忆 | 101 | `auto-memory` 19、`personal-index` 14、`hub` 14、`personal` 14、`hub-about` 10、`assistant-look` 9、`members` 8 |
 | 待你决定、提醒、夜里想一轮 | 30 | `dream` 7、`followups` 6、`inbox` 9、`attention` 4、`kanban` 2 |
-| 只读接入：飞书、电脑、连接器 | 129 | `observation-client` 20、`mac-files` 18、`source-retention` 15、`observations` 14、`connectors` 14、`device-sources` 11 |
+| 只读接入：飞书、电脑、连接器 | 131 | `observation-client` 20、`mac-files` 20、`source-retention` 15、`observations` 14、`connectors` 14、`device-sources` 11 |
 | 文件与自动任务 | 39 | `automations` 11、`file-maintenance` 10、`files` 9、`project-icons` 9 |
 | 界面与其他 | 15 | `qa-lib` 5、`workers-view` 4、`pet-count` 4 |
 
-分区数字按文件里的顶层测试计；有几项写在子测试里，以运行器的合计 489 为准。
+分区数字按文件里的顶层测试计；有几项写在子测试里，以运行器的合计 491 为准。
 
 ## 端到端走查：28 条记录
 

@@ -25,6 +25,8 @@ const DENY_NAME = [
   /\.env(\..+)?$/i, /\.(pem|key|p12|pfx|enc|keychain|keychain-db)$/i, /^id_(rsa|dsa|ecdsa|ed25519)/i,
   /^(auth|credentials?|secrets?)(\.(json|ya?ml|toml|env|txt|ini|conf))?$/i,
   /^(device-token|runtime-token|\.netrc|\.npmrc|\.pypirc)$/i,
+  // Cookie exports and saved browser logins (Playwright storage state) carry live sessions; the whole home folder reaches Downloads.
+  /(^|[._-])(cookies?|storage-?state)([._-][^/]*)?\.(txt|json)$/i,
 ]
 const denied = rel => rel.split(sep).some(part => DENY_SEGMENT.has(part.toLowerCase()) || DENY_NAME.some(re => re.test(part)))
 /** Inside the whole home folder (全部文件): ~/Library (mail, messages, browser and app data) and anything hidden (dot folders hold settings and keys). */
@@ -79,6 +81,7 @@ export const maskSecrets = text => shown(text, hidden(text))
 
 /** An error the asker may see word for word. Anything else is reported by its code only, so no local path leaks. */
 const fail = message => Object.assign(new Error(message), { expected: true })
+const WALK_TOO_LONG = '这个文件夹里的文件太多，限定时间内没能过一遍；给 path 缩小到里面的某个文件夹再找（可以先用 list 看里面有哪些）'
 const iso = ms => new Date(ms).toISOString()
 const whole = (value, fallback, min, max) => Number.isInteger(value) && value > 0 ? Math.min(max, Math.max(min, value)) : fallback
 /** A model often sends "" for a parameter it does not use: that is the same as leaving it out. */
@@ -227,7 +230,7 @@ export class MacReader {
     if (needle && (needle.length < 2 || needle.length > 200)) throw fail('query 要 2 到 200 个字')
     const from = given(since) ? Date.parse(since) : -Infinity, to = given(until) ? Date.parse(until) : Infinity
     if (Number.isNaN(from) || Number.isNaN(to)) throw fail('since、until 要写成 ISO 8601 时间')
-    const deadline = this.now() + this.budgetMs
+    const started = this.now()
     // Walk without following links; a single file is searched as itself.
     const files = [], pending = at.stat.isDirectory() ? [at.rel] : []
     const consider = (rel, info) => {
@@ -238,18 +241,31 @@ export class MacReader {
       files.push({ path: rel, size: info.size, at })
     }
     if (at.stat.isFile()) consider(at.rel, at.stat)
-    let walked = true
+    let walked = true, rounds = 0, walkedAt = started
     while (pending.length) {
       if (files.length >= 50_000) { walked = false;break }
-      const dir = pending.pop()
-      for (const item of await readdir(join(at.folder.dir, dir), { withFileTypes: true }).catch(() => [])) {
-        const rel = join(dir, item.name)
-        // In the whole home folder, installed dependencies are skipped too: they are not the owner's files and would eat the budget.
-        if (this.blocked(at.folder, rel) || (at.folder.whole && item.name === 'node_modules')) continue
-        if (item.isDirectory()) pending.push(rel)
-        else if (item.isFile()) { const info = await stat(join(at.folder.dir, rel)).catch(() => null);if (info) consider(rel, info) }
-      }
+      // The walk has its own limit, checked from the second round on. Past it, half a walk would pass for "newest
+      // first" while it is not, so the answer asks for a smaller folder.
+      if (rounds++ && (walkedAt = this.now()) > started + 2 * this.budgetMs) throw fail(WALK_TOO_LONG)
+      // Eight folders at a time, and their files looked up together: one by one, the whole home folder (about 60,000
+      // folders, 300,000 files) took 16 s to walk; this way about 6 s.
+      const batch = pending.splice(-8), here = []
+      const listed = await Promise.all(batch.map(dir => readdir(join(at.folder.dir, dir), { withFileTypes: true }).catch(() => [])))
+      listed.forEach((items, i) => {
+        for (const item of items) {
+          const rel = join(batch[i], item.name)
+          // In the whole home folder, installed dependencies are skipped too: they are not the owner's files and would eat the budget.
+          if (this.blocked(at.folder, rel) || (at.folder.whole && item.name === 'node_modules')) continue
+          if (item.isDirectory()) pending.push(rel)
+          else if (item.isFile()) here.push(rel)
+        }
+      })
+      const infos = await Promise.all(here.map(rel => stat(join(at.folder.dir, rel)).catch(() => null)))
+      infos.forEach((info, i) => { if (info) consider(here[i], info) })
     }
+    // Looking inside files has its own time after the walk, at least half the allowance, so a long walk cannot use it up.
+    if (rounds > 1) walkedAt = this.now()
+    const deadline = Math.max(started + this.budgetMs, walkedAt + this.budgetMs / 2)
     files.sort((a, b) => b.at - a.at || (a.path < b.path ? -1 : 1))
     const show = file => ({ path: file.path, size: file.size, mtime: iso(file.at) })
     if (!needle) {
