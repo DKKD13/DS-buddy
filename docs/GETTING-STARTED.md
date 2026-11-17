@@ -19,8 +19,8 @@
 ## 第一步：装上
 
 ```sh
-git clone https://github.com/DKKD13/tacit-dsh
-cd tacit-dsh/plugin && npm test        # 全部单测，应当全过
+git clone https://github.com/DKKD13/DS-buddy
+cd DS-buddy/plugin && npm test        # 全部单测，应当全过
 dsh plugin --profile web add "$(pwd)"
 dsh --profile web
 ```
