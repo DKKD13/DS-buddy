@@ -1432,11 +1432,11 @@ window.__ModuleLoader__.load({
 					d.time ? h("time", { className: "mp4-trig-time", dateTime: new Date(d.time).toISOString() }, clock(d.time)) : null));
 			if (!wake) return line("inbox", TRIGGER_TITLES[kind] || "收到执行请求");
 			if (wake.reason === "no_platform_call" || wake.reason === "unanswered") return null;
-			const bubble = (key, caption, text) => h("div", { key, className: "mp4-trig-said" }, h("span", { className: "mp4-trig-from" }, h(Icon, { name: "reply", size: 12 }), caption), h("div", { className: "mp4-trig-bubble" }, h(RichText, { text, members: [] })));
+			const bubble = (key, caption, text) => h("div", { key, className: "mp4-trig-said" }, caption ? h("span", { className: "mp4-trig-from" }, h(Icon, { name: "reply", size: 12 }), caption) : null, h("div", { className: "mp4-trig-bubble" }, h(RichText, { text, members: [] })));
 			const recap = RECAPS[wake.request] || RECAPS[wake.reason];
 			const divider = recap ? h("div", { key: "recap", className: "mp4-trig-divider" }, h("span", null, `${recap} ${d.time ? clock(d.time) : ""}`.trim())) : null;
 			let said = [];
-			if (wake.project === "总管") said = wakeMessages(personal.messages, at, wake.owner, wake.said).map(m => bubble(m.id, "从随手问发来", m.text));
+			if (wake.project === "总管") said = wakeMessages(personal.messages, at, wake.owner, wake.said).map(m => bubble(m.id, null, m.text));
 			else if (task.thread && wake.reason === "spawn" && task.thread.brief) said = [bubble("brief", "项目助理派来的任务", task.thread.brief)];
 			else if (task.thread && (wake.owner || wake.said)) said = wakeMessages((task.thread.timeline || []).filter(r => r.kind === "message"), at, wake.owner, wake.said).map(m => bubble(m.id, "你在项目页发的", m.text));
 			if (divider || said.length) return h("section", { className: "mp4-trig", "data-turn-trigger": true }, divider, said);
@@ -4193,13 +4193,16 @@ window.__ModuleLoader__.load({
 		function openStudio() { studioBus.open = true; studioBus.subs.forEach(f => f()); }
 		function closeStudio() { studioBus.open = false; studioBus.subs.forEach(f => f()); }
 		const useStudioOpen = () => useSyncExternalStore(f => { studioBus.subs.add(f); return () => studioBus.subs.delete(f); }, () => studioBus.open, () => false);
-		let summonBall = null;
-		/** The summon key: the ball's panel where the ball lives, else straight into the assistant's composer. */
-		function summon() {
-			if (summonBall) { summonBall(); return; }
-			// No ball means the assistant's own page is on screen: its composer is the one to type in.
-			const editor = document.querySelector('[contenteditable="true"]');
-			if (editor) editor.focus(); else openMira();
+		/**
+		 * The summon key and the ball do one thing: open the assistant's own conversation with the cursor in its composer,
+		 * the same box, model picker and streaming replies as always (the owner, 2026-11-17: no separate quick-ask).
+		 */
+		let assistantSessionId = null;
+		async function summon() {
+			const onScreen = shell.sidebar?.mounted?.getSnapshot?.();
+			if (!assistantSessionId || onScreen !== assistantSessionId) await openMira();
+			const focus = (tries) => { const editor = document.querySelector('[contenteditable="true"]'); if (editor) editor.focus(); else if (tries) setTimeout(() => focus(tries - 1), 150); };
+			focus(10);
 		}
 
 		function MiraPortrait({ size = 20, look, face = "ask" }) {
@@ -4308,13 +4311,12 @@ window.__ModuleLoader__.load({
 		}
 		function MiraBall() {
 			const hash = useRoute(), onScreen = useOnScreenSession(), nav = useSnapshot(), personal = usePersonal(), today = useToday();
-			const [open, setOpen] = useState(false), [sent, setSent] = useState([]), [draft, setDraft] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(null);
 			const [bubbleOff, setBubbleOff] = useState(() => { try { return window.sessionStorage.getItem("mira-projects:ball-bubble") === "off"; } catch (_) { return false; } });
 			void hash;
 			const visible = !(isHomeRoute() || (onScreen && onScreen === personal.sessionId));
+			if (personal.sessionId) assistantSessionId = personal.sessionId;
 			const pet = personal.look && personal.look.pet || { visible: true, size: "small" }, who = personal.look && personal.look.name || "个人助理";
 			const keyNow = personal.look ? personal.look.hotkey : DEFAULT_HOTKEY;
-			useEffect(() => { if (!visible) return; summonBall = () => setOpen(v => !v); return () => { summonBall = null; }; }, [visible]);
 			// The ball reserves its bottom-right corner in the right panel, so its last row is never under it.
 			useEffect(() => {
 				const root = document.documentElement;
@@ -4322,42 +4324,12 @@ window.__ModuleLoader__.load({
 				return () => root.removeAttribute("data-mira-ball");
 			}, [visible, pet.visible, pet.size]);
 			if (!visible) return null;
-			const task = onScreen ? allTasks(nav).find(x => x.t.sessionId === onScreen) : null;
-			const route = readRoute(), project = !task && route ? nav.projects.find(p => p.id === route.projectId) : null;
-			const context = task ? `「${task.t.title}」（${task.p.name}）` : project ? `「${project.name}」项目` : null;
-			const label = task ? task.t.title : project ? project.name : "所有项目";
-			const waitingN = allTasks(nav).filter(({ t }) => isWaiting(t)).length;
 			const scene = workspaceScene(allTasks(nav).map(x => x.t), personal.status === "running", Date.now());
 			const decisions = (today.waiting?.decisions || []).filter(d => Date.now() - d.since > 60 * 60e3).sort((a, b) => a.since - b.since);
-			const bubble = !open && !bubbleOff && decisions[0] ? `「${decisions[0].threadTitle || "一个任务"}」等你拍板，等了 ${ago(decisions[0].since)}` : null;
-			const ideas = task ? (task.t.state === "review_ready" ? ["改了什么？", "帮我验收"] : task.t.state === "blocked" ? ["推荐哪个？", "替我按推荐的回"] : ["现在到哪了？"]) : ["哪些在等我？", "今天做了什么"];
-			const send = async (text, typed) => {
-				const body = text.trim(); if (!body) return;
-				setBusy(true); setError(null);
-				try {
-					const result = await personalCommand("personalPost", { text: context ? `（我正在看${context}）${body}` : body, ...(typed ? { typed: body } : {}) }, "ball:" + crypto.randomUUID());
-					setSent(s => [...s, { id: result.messageId, text: body }]); setDraft("");
-				} catch (e) { setError(e.message); } finally { setBusy(false); }
-			};
-			const replies = id => (personal.messages || []).filter(m => m.replyTo === id);
-			const acted = id => (personal.actions || []).filter(a => a.sourceMessageId === id);
+			const bubble = !bubbleOff && decisions[0] ? `「${decisions[0].threadTitle || "一个任务"}」等你拍板，等了 ${ago(decisions[0].since)}` : null;
 			return h("div", { className: "mp4-ball-wrap" },
-				open ? h("div", { className: "mp4-ball-panel", role: "dialog", "aria-label": "随手问" },
-					h("div", { className: "mp4-ball-head" }, h("button", { type: "button", className: "mp4-icon", title: "形象与快捷键", "aria-label": "形象与快捷键", onClick: () => { setOpen(false); openStudio(); } }, h(MiraPortrait, { size: 20 })), h("span", { className: "mp4-ell mp4-ball-where" }, h("span", { className: "mp4-muted" }, "当前"), label),
-						h("button", { type: "button", className: "mp4-icon", "aria-label": "到个人助理继续", title: "到个人助理继续", onClick: () => { setOpen(false); openMira(); } }, h(Icon, { name: "popout", size: 14 })),
-						h("button", { type: "button", className: "mp4-icon", "aria-label": "收起", title: "收起", onClick: () => setOpen(false) }, h(Icon, { name: "close", size: 14 }))),
-					h("div", { className: "mp4-ball-body" },
-						sent.map(s => h(React.Fragment, { key: s.id },
-							h("div", { className: "mp4-ball-me" }, s.text),
-							acted(s.id).map(a => h("div", { key: a.seq, className: "mp4-ball-act" }, h("b", null, "✓ 已执行 "), a.text)),
-							replies(s.id).length ? replies(s.id).map(m => h("div", { key: m.id, className: "mp4-ball-bot" }, h(RichText, { text: m.text, members: [] }))) : h("div", { className: "mp4-ball-bot mp4-muted" }, "助理在看…"))),
-						sent.length < 3 ? h("div", { className: "mp4-ball-ideas" }, ideas.map(i => h("button", { key: i, type: "button", className: "mp4-sug", disabled: busy, onClick: () => send(i) }, i))) : null,
-						error ? h("p", { className: "mp-error" }, error) : null),
-					h("form", { className: "mp4-ball-input", onSubmit: e => { e.preventDefault(); send(draft, true); } },
-						h("input", { "aria-label": "随手问", value: draft, placeholder: "随手问，或让它去办…", onChange: e => setDraft(e.target.value), disabled: busy }),
-						h("button", { type: "submit", className: "mp4-icon mp4-send", "aria-label": "发送", disabled: busy || !draft.trim() }, h(Icon, { name: "send", size: 14 })))) : null,
-				bubble ? h("div", { className: "mp4-ball-bubble" }, h("button", { type: "button", onClick: () => { setOpen(true); } }, bubble), h("button", { type: "button", className: "mp4-icon", "aria-label": "先不用", onClick: () => { setBubbleOff(true); try { window.sessionStorage.setItem("mira-projects:ball-bubble", "off"); } catch (_) {} } }, "×")) : null,
-				pet.visible ? h("button", { type: "button", className: "mp4-ball", "aria-label": "随手问", title: `${who}：${scene.title}${keyNow ? `，${hotkeyLabel(keyNow)} 呼出` : ""}`, "aria-expanded": open, onClick: () => setOpen(v => !v) }, h(PixelMark, { state: scene.state, size: pet.size === "large" ? 56 : 44 })) : null);
+				bubble ? h("div", { className: "mp4-ball-bubble" }, h("button", { type: "button", onClick: () => summon() }, bubble), h("button", { type: "button", className: "mp4-icon", "aria-label": "先不用", onClick: () => { setBubbleOff(true); try { window.sessionStorage.setItem("mira-projects:ball-bubble", "off"); } catch (_) {} } }, "×")) : null,
+				pet.visible ? h("button", { type: "button", className: "mp4-ball", "aria-label": `打开${who}`, title: `${who}：${scene.title}${keyNow ? `，${hotkeyLabel(keyNow)} 呼出` : ""}`, onClick: () => summon() }, h(PixelMark, { state: scene.state, size: pet.size === "large" ? 56 : 44 })) : null);
 		}
 
 
@@ -5127,7 +5099,6 @@ button.mp4-dock-note-text{all:unset;box-sizing:border-box;cursor:pointer;min-wid
 .mp4-chip{border-color:var(--rx-gray-7)}
 .mp4-wrow-go{flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:2px;padding-left:8px;color:var(--mp4-fg3)}.mp4-wrow:hover .mp4-wrow-go{color:var(--mp4-fg)}
 
-.mp4-ball-ideas .mp4-sug,.mp4-studio .mp4-sug,.mp4-chip,.mp4-key{border-radius:6px}
 html[data-mira-ball=large]{--mira-pet-room:136px}
 .mp4-follow-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.mp4-runner{align-items:center;margin-top:0}.mp4-runner .mp4-agent-select{width:auto;flex:1;min-width:0}
 /* 项目 index */
@@ -5152,7 +5123,7 @@ html[data-mira-ball=large]{--mira-pet-room:136px}
 .mp4-entry{position:relative;display:inline-flex}
 
 .mp-workspace-recent .mp4-dot{margin-top:8px}
-/* 随手问 */
+/* the ball: opens the assistant */
 .mp4-ball-wrap{position:fixed;right:22px;bottom:22px;z-index:40;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
 /* DSH's overlay layer turns pointer events off for everything inside it; the ball and its panel take them back. */
 .mp4-ball-wrap>*,.mp4-ball-wrap>* *{pointer-events:auto!important}
@@ -5160,14 +5131,6 @@ html[data-mira-ball=large]{--mira-pet-room:136px}
 .mp4-ball:hover{transform:translateY(-1px)}
 .mp4-ball-bubble{max-width:300px;display:flex;align-items:flex-start;gap:4px;background:var(--rx-gray-1,#FFFFFF);color:var(--mp4-fg);border-radius:8px;box-shadow:0 0 0 .5px rgba(0,0,0,.1),0 12px 32px -12px rgba(0,0,0,.3);padding:8px 6px 8px 12px;font-size:13px;line-height:1.6}
 .mp4-ball-bubble>button:first-child{all:unset;cursor:pointer;flex:1}
-.mp4-ball-panel{width:360px;max-height:min(520px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--rx-gray-1,#FFFFFF);color:var(--mp4-fg);border-radius:8px;box-shadow:0 0 0 .5px var(--rx-gray-6),0 12px 32px -12px rgba(0,0,0,.25);overflow:hidden;font-size:13px;line-height:1.6}
-.mp4-ball-head{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-bottom:.5px solid var(--mp4-hair)}.mp4-ball-head>span{flex:1}
-.mp4-ball-body{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-.mp4-ball-me{align-self:flex-end;max-width:85%;background:var(--mp4-fill);border-radius:8px;padding:6px 10px}
-.mp4-ball-bot{max-width:92%}.mp4-ball-act{border:.5px solid var(--mp4-hair);border-radius:8px;padding:6px 10px}.mp4-ball-act b{color:var(--rx-green-11)}
-.mp4-ball-ideas{display:flex;flex-wrap:wrap;gap:6px}
-.mp4-ball-input{display:flex;gap:6px;align-items:center;padding:8px;border-top:.5px solid var(--mp4-hair)}
-.mp4-ball-input input{flex:1;min-width:0;height:32px;box-sizing:border-box;border:.5px solid var(--mp4-hair2);border-radius:6px;padding:0 10px;font:inherit;color:inherit;background:transparent}
 /* While the ball is on screen it owns the bottom-right corner of the right panel: end the tab's scroll
    area above it, so no row can ever slide under the ball (padding alone still lets content scroll past). */
 html[data-mira-ball] .mp4-tabpane{height:max(0px,calc(100% - var(--mira-pet-room,112px)));-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 22px),transparent)}
@@ -5365,7 +5328,7 @@ div:has(> [data-slot="sidebar.right.tab.guide.entry"] [data-mira-guide-skip]){di
 			const views = { request_decision: DecisionToolView, update_card: UpdateCardView, inbox_read: InboxReadView, post_message: PostMessageView, message_coordinator: MessageCoordinatorView, withdraw_decision: WithdrawDecisionView,
 				open_thread: OpenThreadView, add_member: AddMemberView, message_thread: MessageThreadView, list_threads: ListThreadsView, read_thread: ReadThreadView, no_reply: NoReplyView };
 			for (const [tool, View] of Object.entries(views)) ctx.effect(() => ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({ name: "tool.call.toolview", key: tool, locale: NS, inject: (sessionId) => ({ sessionId }) }, View)), `mira-projects: ${tool} view`);
-			// 随手问 floats over every screen except Mira itself.
+			// The ball floats over every screen except the assistant itself, and opens it.
 			ctx.effect(() => ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "mira-ball", order: 50 }, MiraBall)), "mira-projects: floating ball");
 			ctx.effect(() => ctx.slots.inject("shell.overlay", () => ctx.slots.register({ name: "shell.overlay", id: "mira-studio", order: 60 }, LookStudioHost)), "mira-projects: look studio");
 			// The summon key (⌥M unless the owner picked another or none): a capture listener, as DSH's shortcut service refuses some combinations.
