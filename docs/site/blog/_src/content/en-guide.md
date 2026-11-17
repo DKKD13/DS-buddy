@@ -8,8 +8,8 @@ In DS-buddy you mostly deal with two things: the personal assistant, Tacit, and 
 You need DeepSeek Harness 0.2.x and Node 24 or later. If you don't have DeepSeek Harness yet: `npm install -g @deepseek-ai/dsh`.
 
 ```
-git clone https://github.com/DKKD13/tacit-dsh
-cd tacit-dsh/plugin
+git clone https://github.com/DKKD13/DS-buddy
+cd DS-buddy/plugin
 dsh plugin --profile web add "$(pwd)"
 dsh --profile web
 ```
